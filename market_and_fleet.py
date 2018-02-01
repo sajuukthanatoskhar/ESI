@@ -643,6 +643,7 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
                 #print(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname)))))) #It is correct OH NO IT ISN"T
                 #print(str(runs_required))
+                #asdfasdg
                 reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
 
     else:
