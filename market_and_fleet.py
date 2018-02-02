@@ -626,6 +626,13 @@ First, we take stuff from fuzzworks and dump it into a file, this is done outsid
 Secondly, we read the contents of that file line by line
     In each line, we will need to get the name of the complex material and the number of runs it needs to be done (runs needs to be ceil-rounded)
     These runs and materials will then be fed into reaction_cost()
+INPUTS
+
+market_hub = high sec market hub of choice (region) eg. The Forge (for jita)
+alliance_home_region = Alliance's home region (Not implemented)
+file = file that you have dumped the following format
+COMPLEX_REACTION_NAME COMPLEX_REACTION_QUANTITY
+
 """
 def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
 
@@ -661,7 +668,9 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
     else:
         print("Error: " + file + " does not exist")
 
-
+"""
+This function takes in the name of a complex reaction
+"""
 def get_complex_material_reaction_name(complex_reaction):
     #print(complex_reaction)
     if complex_reaction != "Fullerides":
