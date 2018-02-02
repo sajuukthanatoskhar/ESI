@@ -1,9 +1,7 @@
-14791	Fermionic Condensates
-12436	Ferrogel
-1014899	Fullerides
-12653	Hypersynaptic Fibers
-36473	Nanotransistors
-69214	Phenolic Composites
-2708903	Sylramic Fibers
-40194	Terahertz Metamaterials
-10373147	Tungsten Carbide
+16860	Fermionic Condensates
+7020	Ferrogel
+69540	Fullerides
+19680	Hypersynaptic Fibers
+7020	Nanotransistors
+18960	Phenolic Composites
+492900	Tungsten Carbide

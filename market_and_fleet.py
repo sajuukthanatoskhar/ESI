@@ -263,7 +263,7 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         # print(line['name'])
         tempprice = get_market_price(marketregion, line['name'])
         if 'Block' in line['name']:
-            print(line['name'] + " " + str(tempprice * 5 * runs * 2))
+            #print(line['name'] + " " + str(tempprice * 5 * runs * 2))
             total_raw_input = tempprice * 5 * runs * 2 + total_raw_input
         else:
             # print(line['name'] + " " + str(tempprice))
@@ -645,13 +645,25 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
                 #print(str(runs_required))
                 #asdfasdg
                 reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
+        with open(file, mode="r") as file_to_read:
+            for line in file_to_read:
+                parts_k = line.split()
 
+                materialname = str(' '.join(parts_k[1:]))
+                #print(type(materialname))
+                materialquantity = parts_k[0]
+                #print(str(materialname))
+
+                #complex_reaction_id = get_complex_material_reaction_id(materialname)["typeid"] #forgotten how to retrieve dictionary stuff as i haven't seen this code for a month
+                #print(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))
+                runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
+                print(materialname + " " + str(runs_required))
     else:
         print("Error: " + file + " does not exist")
 
 
 def get_complex_material_reaction_name(complex_reaction):
-    print(complex_reaction)
+    #print(complex_reaction)
     if complex_reaction != "Fullerides":
         complexr = complex_reaction + " Reaction Formula"
     else:
