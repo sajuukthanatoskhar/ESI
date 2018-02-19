@@ -1,7 +1,5 @@
-16860	Fermionic Condensates
-7020	Ferrogel
-69540	Fullerides
-19680	Hypersynaptic Fibers
-7020	Nanotransistors
-18960	Phenolic Composites
-492900	Tungsten Carbide
+3544068	Fullerides
+312487	Hypersynaptic Fibers
+261448	Titanium Carbide
+3075144	Tungsten Carbide
+1537304	Fernite Carbide

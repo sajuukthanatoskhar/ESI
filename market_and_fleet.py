@@ -4,10 +4,11 @@ import json
 import sqlite3
 import time
 import urllib.request
+import _thread
 import os
 # from ruamel.yaml import YAML
 import threading
-
+from queue import Queue
 import math
 import requests
 import yaml
@@ -20,6 +21,9 @@ from operator import itemgetter
 from collections import OrderedDict
 
 # headers: {'Authorization': '{} {}'.format(token_type, access_token)}
+print_lock = threading.Lock()
+queueumult = Queue()
+locks = []
 
 
 def req_esi(request_esi):
@@ -32,6 +36,17 @@ def req_fuzzwork(request):
     return wp
 
 
+def threaded_reaction_cost(thread_lock_no, materialname,runs_required,market_hub,alliance_home_region):
+    #TODO:reactioncost
+    print("calculating cost of reaction using" + str(thread_lock_no))
+    reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
+    thread_lock_no.release()
+
+
+
+'''
+One time run function
+'''
 def load_evedb(eve_db_file):
     conn = sqlite3.connect(eve_db_file)
     cur = conn.cursor()
@@ -235,6 +250,9 @@ def get_reactionoutput(reaction_togetoutputof):
         print(config[int(reaction_togetoutputof)]["activities"]["reaction"]["products"][0]["quantity"])
         return config[int(reaction_togetoutputof)]["activities"]["reaction"]["products"][0]["quantity"]
 
+
+
+
 """
 Calculates complex reaction expenditure and revenue based on the get_market_price(x,y) function algorithm
 Input is the name of the complex reaction as a string, the number of runs of raw moon minerals, the marketregion where you are retrieving your prices from, homeregion has no functionality 
@@ -242,6 +260,8 @@ The results are printed out and the return is void
 It prints out the resources needed for the runs and are formatted on the console in a way so that you can put them into multibuy
 """
 def reaction_cost(complex_reaction, runs, marketregion, homeregion):
+    #if screen_lock in globals():
+    #    screen_lock.acquire()
     if complex_reaction != "Fullerides":
         complexr = get_blueprint_details(complex_reaction + " Reaction Formula")
     else:
@@ -283,6 +303,8 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         i = i + 1
     # How many simple reactions?
     print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+    #if screen_lock in globals():
+    #    screen_lock.release()
 
 """
 Retrieves the different groups of fleets as described in the fleet_doc input as described in any of the doctrines folder's files
@@ -635,34 +657,35 @@ COMPLEX_REACTION_NAME COMPLEX_REACTION_QUANTITY
 
 """
 def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
+    #Get number of lines in file
 
+    NumofThreads = sum(1 for line in open(file))
+    threadList = []
     if check_file(file):
-        with open(file,mode="r") as file_to_read:
+        with open(file,mode="r") as file_to_read: #Does the reaction cost
             for line in file_to_read:
                 parts_k = line.split()
-
                 materialname = str(' '.join(parts_k[1:]))
-                #print(type(materialname))
                 materialquantity = parts_k[0]
-                #print(str(materialname))
+                runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
 
-                #complex_reaction_id = get_complex_material_reaction_id(materialname)["typeid"] #forgotten how to retrieve dictionary stuff as i haven't seen this code for a month
-                #print(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))
-                runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname)))))) #It is correct OH NO IT ISN"T
-                #print(str(runs_required))
-                #asdfasdg
-                reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
-        with open(file, mode="r") as file_to_read:
+                a_lock = _thread.allocate_lock()
+                a_lock.acquire()
+                locks.append(a_lock)
+                _thread.start_new_thread(threaded_reaction_cost,(a_lock,materialname,runs_required,market_hub,alliance_home_region))
+
+                #t = threading.Thread(target=reaction_cost, args=[materialname,runs_required,market_hub,alliance_home_region])
+                #t.daemon = True
+                #t.start()
+                #threadList.append(t)
+                #t.join()
+
+                #reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
+        with open(file, mode="r") as file_to_read:  #Summarises the complex reactions
             for line in file_to_read:
                 parts_k = line.split()
-
                 materialname = str(' '.join(parts_k[1:]))
-                #print(type(materialname))
                 materialquantity = parts_k[0]
-                #print(str(materialname))
-
-                #complex_reaction_id = get_complex_material_reaction_id(materialname)["typeid"] #forgotten how to retrieve dictionary stuff as i haven't seen this code for a month
-                #print(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
                 print(materialname + " " + str(runs_required))
     else:
@@ -684,6 +707,7 @@ There is a lot of random stuff commented out here as I tend to uncomment them fo
 """
 def main():
     get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
+
     #multi_stuff()
     #unload_blueprintsyaml()
     #load_evedb("eve.db")
@@ -691,7 +715,7 @@ def main():
     #print(get_market_price("The Forge","Plasmonic Metamaterials"))
     #print(get_market_price("The Forge", "Ferrogel"))
     #print(get_market_price("The Forge", "Photonic Metamaterials"))
-    #print(get_market_price("The Forge", "Nanotransistors"))
+    #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
     #print(get_market_price("The Forge", "Sylramic Fibers"))
 
     #print(get_market_price("The Forge", "Paladin"))
@@ -708,7 +732,11 @@ def main():
     #reaction_cost('Fullerides', 342, "The Forge", "Esoteria")
     #reaction_cost('Fullerides', 100, "The Forge", "Esoteria")
 
-    #reaction_cost('Fernite Carbide', 200, "The Forge", "Esoteria")
+    #reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
+    #reaction_cost('Fullerides', 400, "The Forge", "Esoteria")
+    #reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
+    #reaction_cost('Phenolic Composites', 200, "The Forge", "Esoteria")
+    #reaction_cost('Fermionic Condensates', 50, "The Forge", "Esoteria")
     #reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
     #reaction_cost('Plasmonic Metamaterials', 100, "The Forge", "Esoteria")
     #reaction_cost('Nonlinear Metamaterials', 100, "The Forge", "Esoteria")
@@ -726,7 +754,7 @@ def main():
     #reaction_cost('Crystalline Carbonide', 200, "The Forge", "Esoteria")
     #reaction_cost('Plasmonic Metamaterials',50,"The Forge","Esoteria")
     #reaction_cost('Nonlinear Metamaterials', 50, "The Forge", "Esoteria")
-    #reaction_cost('Fernite Carbide', 200, "The Forge", "Esoteria")
+    #reaction_cost('Photonic Metamaterials', 100, "The Forge", "Esoteria")
     #reaction_cost('Phenolic Composites', 100, "The Forge", "Esoteria")
     #reaction_cost('Fernite Carbide', 100, "The Forge", "Esoteria")
     #reaction_cost('Fermionic Condensates',25,'The Forge','Esoteria')
@@ -769,7 +797,8 @@ def main():
     #     # print(str(pw[i]["type_id"])+"\t\t\t"+str(pw[i]["volume_total"])+"\t\t\t"+str(pw[i]["price"]))
     #     i = i + 1
 
-
+screen_lock = threading.Semaphore(value=1)
 start_time = time.time()
 main()
+all(lock.acquire() for lock in locks)
 print("%s seconds" % (time.time() - start_time))
