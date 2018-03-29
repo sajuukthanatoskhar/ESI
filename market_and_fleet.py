@@ -12,6 +12,8 @@ from queue import Queue
 import math
 import requests
 import yaml
+import MoonGooGUI
+import tkinter
 from multiprocessing import Pool
 # locale.setlocale(locale.LC_ALL, "en_US")
 # local.format("%d",1255000,grouping=True)
@@ -138,16 +140,13 @@ itemtype is the name of an item
 def get_market_price(region, itemtype):
     type_id_request = get_typeid(itemtype)
     region_id = get_region(region)
-
     reader = codecs.getreader("utf-8")
     # pw = json.load(reader(req_esi("alliances/names/?alliance_ids=1000171,498125261&datasource=tranquility")))
     pw = json.load(reader(
         req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
     # pw = json.load(reader(req_esi("markets/10000002/orders/?order_type=sell&type_id=24702&datasource=tranquility")))
-
     ordered_list = print_ordered_JSON(pw, type_id_request, region_id, region, itemtype)
     ordered_list_index_total = len(ordered_list)
-
     spread = int(round(ordered_list_index_total / 10, 0) * 2)
     if spread is 0:
         spread = 1
@@ -284,7 +283,9 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         tempprice = get_market_price(marketregion, line['name'])
         if 'Block' in line['name']:
             #print(line['name'] + " " + str(tempprice * 5 * runs * 2))
+            #print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
             total_raw_input = tempprice * 5 * runs * 2 + total_raw_input
+
         else:
             # print(line['name'] + " " + str(tempprice))
             simple_reaction.append(get_blueprint_details(line['name'] + " Reaction Formula"))
@@ -294,7 +295,8 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         for line in superline['activityMaterials']['11']:
             tempprice = get_market_price(marketregion, line['name'])
             if 'Block' in line['name']:
-                print(line['name'] + " " + str(runs * 100))  # + str(tempprice*5*runs))
+                #print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
+                #print(line['name'] + " " + str(runs * 100))  # + str(tempprice*5*runs))
                 # We will deal with this later
                 total_raw_input = total_raw_input + tempprice * 5 * runs
             else:
@@ -706,13 +708,28 @@ The Main function
 There is a lot of random stuff commented out here as I tend to uncomment them for various uses
 """
 def main():
-    get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
-
+    #get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
+    #MoonGooGUI.MoonGooGui()
     #multi_stuff()
     #unload_blueprintsyaml()
     #load_evedb("eve.db")
     #fleet_overwatch("harpy", 1, 'sajuukthanatoskhar')
-    #print(get_market_price("The Forge","Plasmonic Metamaterials"))
+    #print(get_market_price("The Forge","Tungsten Carbide"))
+    #print(get_market_price("The Forge", "Titanium Carbide"))
+    print(get_market_price("The Forge", "Terahertz Metamaterials"))
+    #print(get_market_price("The Forge", "Sylramic Fibers"))
+    print(get_market_price("The Forge", "Plasmonic Metamaterials"))
+    print(get_market_price("The Forge", "Photonic Metamaterials"))
+    #print(get_market_price("The Forge", "Phenolic Composites"))
+    print(get_market_price("The Forge", "Nonlinear Metamaterials"))
+    print(get_market_price("The Forge", "Nanotransistors"))
+    #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
+    print(get_market_price("The Forge", "Fullerides"))
+    #print(get_market_price("The Forge", "Ferrogel"))
+    #print(get_market_price("The Forge", "Fernite Carbide"))
+    #print(get_market_price("The Forge", "Fermionic Condensates"))
+    #print(get_market_price("The Forge", "Crystalline Carbonide"))
+
     #print(get_market_price("The Forge", "Ferrogel"))
     #print(get_market_price("The Forge", "Photonic Metamaterials"))
     #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
@@ -722,24 +739,35 @@ def main():
     #print(get_market_price("The Forge", "Plasmonic Metamaterials"))
     #print(get_market_price("The Forge", "Nonlinear Metamaterials"))
 
-    #print(get_market_price("The Forge", "Tungsten Carbide"))
-    #reaction_cost('Tungsten Carbide', 1048, "The Forge", "Esoteria")
+    #reaction_cost('Fernite Carbide', 500, "The Forge", "Esoteria")
+    #reaction_cost('Hypersynaptic Fibers', 300, "The Forge", "Esoteria")
+    #print(get_market_price("The Forge", "Tungsten Carbide")99999)
+    '''reaction_cost('Tungsten Carbide', 300, "The Forge", "Esoteria")
+    reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
+    reaction_cost('Crystalline Carbonide', 300, "The Forge", "Esoteria")
+    
+    reaction_cost('Phenolic Composites', 300, "The Forge", "Esoteria")
+    reaction_cost('Fermionic Condensates', 200, "The Forge", "Esoteria")
+    reaction_cost('Terahertz Metamaterials', 200, "The Forge", "Esoteria")
+    reaction_cost('Plasmonic Metamaterials', 200, "The Forge", "Esoteria")
+    reaction_cost('Nonlinear Metamaterials', 200, "The Forge", "Esoteria")
+    reaction_cost('Photonic Metamaterials', 200, "The Forge", "Esoteria")
+    reaction_cost('Phenolic Composites', 300, "The Forge", "Esoteria")
+    reaction_cost('Nanotransistors', 200, "The Forge", "Esoteria")
+    reaction_cost('Hypersynaptic Fibers', 200, "The Forge", "Esoteria")
+    reaction_cost('Fullerides', 250, "The Forge", "Esoteria")
+    '''
+
     #reaction_cost('Nanotransistors', 100, "The Forge", "Esoteria")
     #reaction_cost('Hypersynaptic Fibers', 100, "The Forge", "Esoteria")
     #reaction_cost('Terahertz Metamaterials', 136, "The Forge", "Esoteria")
-    #reaction_cost('Nanotransistors', 25, "The Forge", "Esoteria")
-    #reaction_cost('Hypersynaptic Fibers', 18, "The Forge", "Esoteria")
-    #reaction_cost('Fullerides', 342, "The Forge", "Esoteria")
+
     #reaction_cost('Fullerides', 100, "The Forge", "Esoteria")
 
     #reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
     #reaction_cost('Fullerides', 400, "The Forge", "Esoteria")
     #reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
-    #reaction_cost('Phenolic Composites', 200, "The Forge", "Esoteria")
-    #reaction_cost('Fermionic Condensates', 50, "The Forge", "Esoteria")
-    #reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
-    #reaction_cost('Plasmonic Metamaterials', 100, "The Forge", "Esoteria")
-    #reaction_cost('Nonlinear Metamaterials', 100, "The Forge", "Esoteria")
+
     #reaction_cost('Phenolic Composites', 200, "The Forge", "Esoteria")
 
     #reaction_cost('Photonic Metamaterials', 75, "The Forge", "Esoteria")
