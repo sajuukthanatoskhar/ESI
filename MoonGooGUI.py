@@ -51,5 +51,5 @@ def MoonGooGui():
     root = Tk()
     root.geometry("400x300")
     app = Window(root)
-    root.mainloop()
+    app.mainloop()
 
