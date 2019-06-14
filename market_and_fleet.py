@@ -21,7 +21,10 @@ import authpython
 import pythonserver
 from operator import itemgetter
 from collections import OrderedDict
-
+global totalcost
+totalcost = 0
+global _debug
+_debug = 0
 # headers: {'Authorization': '{} {}'.format(token_type, access_token)}
 print_lock = threading.Lock()
 queueumult = Queue()
@@ -29,7 +32,10 @@ locks = []
 
 
 def req_esi(request_esi):
-    wp = urllib.request.urlopen("https://esi.tech.ccp.is/latest/" + request_esi)
+    if _debug == 1:
+        print("https://esi.evetech.net/latest/" + request_esi)
+    wp = urllib.request.urlopen("https://esi.evetech.net/latest/" + request_esi)
+
     return wp
 
 
@@ -142,8 +148,7 @@ def get_market_price(region, itemtype):
     region_id = get_region(region)
     reader = codecs.getreader("utf-8")
     # pw = json.load(reader(req_esi("alliances/names/?alliance_ids=1000171,498125261&datasource=tranquility")))
-    pw = json.load(reader(
-        req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
+    pw = json.load(reader(req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
     # pw = json.load(reader(req_esi("markets/10000002/orders/?order_type=sell&type_id=24702&datasource=tranquility")))
     ordered_list = print_ordered_JSON(pw, type_id_request, region_id, region, itemtype)
     ordered_list_index_total = len(ordered_list)
@@ -305,6 +310,8 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         i = i + 1
     # How many simple reactions?
     print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+    global totalcost
+    totalcost += total_raw_input
     #if screen_lock in globals():
     #    screen_lock.release()
 
@@ -831,3 +838,4 @@ start_time = time.time()
 main()
 all(lock.acquire() for lock in locks)
 print("%s seconds" % (time.time() - start_time))
+print("%s Mil ISK"%str(totalcost/1E6))
