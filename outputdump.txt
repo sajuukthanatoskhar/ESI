@@ -1,1 +1,7 @@
-35700 Fullerides
+16377	Fermionic Condensates
+6893	Ferrogel
+67559	Fullerides
+19177	Hypersynaptic Fibers
+6893	Nanotransistors
+18425	Phenolic Composites
+479046	Tungsten Carbide
