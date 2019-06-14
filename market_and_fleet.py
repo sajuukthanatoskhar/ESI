@@ -24,6 +24,8 @@ from collections import OrderedDict
 global totalcost
 totalcost = 0
 global _debug
+global moon_ingredients
+moon_ingredients = {}
 _debug = 0
 # headers: {'Authorization': '{} {}'.format(token_type, access_token)}
 print_lock = threading.Lock()
@@ -266,6 +268,7 @@ It prints out the resources needed for the runs and are formatted on the console
 def reaction_cost(complex_reaction, runs, marketregion, homeregion):
     #if screen_lock in globals():
     #    screen_lock.acquire()
+    global moon_ingredients
     if complex_reaction != "Fullerides":
         complexr = get_blueprint_details(complex_reaction + " Reaction Formula")
     else:
@@ -307,9 +310,16 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
             else:
                 print(line['name'] + " " + str(runs * 100))  # + " " + str(tempprice*100*runs))
                 total_raw_input = total_raw_input + tempprice * 100 * runs
+                if line['name'] in moon_ingredients:
+                    moon_ingredients[line['name']] += runs * 100
+                else:
+                    moon_ingredients[line['name']] = runs * 100
+
         i = i + 1
     # How many simple reactions?
     print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+
+
     global totalcost
     totalcost += total_raw_input
     #if screen_lock in globals():
@@ -667,7 +677,7 @@ COMPLEX_REACTION_NAME COMPLEX_REACTION_QUANTITY
 """
 def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
     #Get number of lines in file
-
+    global moon_ingredients
     NumofThreads = sum(1 for line in open(file))
     threadList = []
     if check_file(file):
@@ -697,6 +707,7 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
                 materialquantity = parts_k[0]
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
                 print(materialname + " " + str(runs_required))
+                #moon_ingredients[materialname] = runs_required
     else:
         print("Error: " + file + " does not exist")
 
@@ -837,5 +848,10 @@ screen_lock = threading.Semaphore(value=1)
 start_time = time.time()
 main()
 all(lock.acquire() for lock in locks)
-print("%s seconds" % (time.time() - start_time))
+print("***********************************************")
+for i in moon_ingredients:
+    print("%s %d"%(i,moon_ingredients[i]))
 print("%s Mil ISK"%str(totalcost/1E6))
+print("%s seconds" % (time.time() - start_time))
+
+
