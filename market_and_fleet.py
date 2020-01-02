@@ -29,7 +29,7 @@ locks = []
 
 
 def req_esi(request_esi):
-    wp = urllib.request.urlopen("https://esi.tech.ccp.is/latest/" + request_esi)
+    wp = urllib.request.urlopen("https://esi.evetech.net/dev/" + request_esi)
     return wp
 
 
@@ -40,7 +40,7 @@ def req_fuzzwork(request):
 
 def threaded_reaction_cost(thread_lock_no, materialname,runs_required,market_hub,alliance_home_region):
     #TODO:reactioncost
-    print("calculating cost of reaction using" + str(thread_lock_no))
+    print("calculating cost of " + materialname + " reaction using" + str(thread_lock_no))
     reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
     thread_lock_no.release()
 
@@ -304,7 +304,7 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
                 total_raw_input = total_raw_input + tempprice * 100 * runs
         i = i + 1
     # How many simple reactions?
-    print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+    #print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
     #if screen_lock in globals():
     #    screen_lock.release()
 
@@ -708,7 +708,7 @@ The Main function
 There is a lot of random stuff commented out here as I tend to uncomment them for various uses
 """
 def main():
-    #get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
+    get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
     #MoonGooGUI.MoonGooGui()
     #multi_stuff()
     #unload_blueprintsyaml()
@@ -716,15 +716,15 @@ def main():
     #fleet_overwatch("harpy", 1, 'sajuukthanatoskhar')
     #print(get_market_price("The Forge","Tungsten Carbide"))
     #print(get_market_price("The Forge", "Titanium Carbide"))
-    print(get_market_price("The Forge", "Terahertz Metamaterials"))
-    #print(get_market_price("The Forge", "Sylramic Fibers"))
-    print(get_market_price("The Forge", "Plasmonic Metamaterials"))
-    print(get_market_price("The Forge", "Photonic Metamaterials"))
-    #print(get_market_price("The Forge", "Phenolic Composites"))
-    print(get_market_price("The Forge", "Nonlinear Metamaterials"))
-    print(get_market_price("The Forge", "Nanotransistors"))
-    #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
-    print(get_market_price("The Forge", "Fullerides"))
+    # print(get_market_price("The Forge", "Terahertz Metamaterials"))
+    # #print(get_market_price("The Forge", "Sylramic Fibers"))
+    # print(get_market_price("The Forge", "Plasmonic Metamaterials"))
+    # print(get_market_price("The Forge", "Photonic Metamaterials"))
+    # #print(get_market_price("The Forge", "Phenolic Composites"))
+    # print(get_market_price("The Forge", "Nonlinear Metamaterials"))
+    # print(get_market_price("The Forge", "Nanotransistors"))
+    # #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
+    # print(get_market_price("The Forge", "Fullerides"))
     #print(get_market_price("The Forge", "Ferrogel"))
     #print(get_market_price("The Forge", "Fernite Carbide"))
     #print(get_market_price("The Forge", "Fermionic Condensates"))
