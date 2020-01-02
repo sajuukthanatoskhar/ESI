@@ -1,7 +1,4 @@
-*.db
 *.xml
-*.yaml
-*.key
 *.etf
 venv/
 *.json
