@@ -21,7 +21,12 @@ import authpython
 import pythonserver
 from operator import itemgetter
 from collections import OrderedDict
-
+global totalcost
+totalcost = 0
+global _debug
+global moon_ingredients
+moon_ingredients = {}
+_debug = 0
 # headers: {'Authorization': '{} {}'.format(token_type, access_token)}
 print_lock = threading.Lock()
 queueumult = Queue()
@@ -56,7 +61,7 @@ def load_evedb(eve_db_file):
     rows = cur.fetchall()
     file_write = codecs.open("eve_inv_types.etf", "w", "utf-8")
     for row in rows:
-        outputfromsqlite = str(row[0]) + " " + str(row[2])
+        outputfromsqlite = str(row[0]) + " " + str(row[1])
         print(outputfromsqlite)
         file_write.write(str(outputfromsqlite) + "\n")
     file_write.close()
@@ -142,8 +147,7 @@ def get_market_price(region, itemtype):
     region_id = get_region(region)
     reader = codecs.getreader("utf-8")
     # pw = json.load(reader(req_esi("alliances/names/?alliance_ids=1000171,498125261&datasource=tranquility")))
-    pw = json.load(reader(
-        req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
+    pw = json.load(reader(req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
     # pw = json.load(reader(req_esi("markets/10000002/orders/?order_type=sell&type_id=24702&datasource=tranquility")))
     ordered_list = print_ordered_JSON(pw, type_id_request, region_id, region, itemtype)
     ordered_list_index_total = len(ordered_list)
@@ -261,6 +265,7 @@ It prints out the resources needed for the runs and are formatted on the console
 def reaction_cost(complex_reaction, runs, marketregion, homeregion):
     #if screen_lock in globals():
     #    screen_lock.acquire()
+    global moon_ingredients
     if complex_reaction != "Fullerides":
         complexr = get_blueprint_details(complex_reaction + " Reaction Formula")
     else:
@@ -302,9 +307,16 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
             else:
                 print(line['name'] + " " + str(runs * 100))  # + " " + str(tempprice*100*runs))
                 total_raw_input = total_raw_input + tempprice * 100 * runs
+                if line['name'] in moon_ingredients:
+                    moon_ingredients[line['name']] += runs * 100
+                else:
+                    moon_ingredients[line['name']] = runs * 100
+
         i = i + 1
     # How many simple reactions?
     #print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+    global totalcost
+    totalcost += total_raw_input
     #if screen_lock in globals():
     #    screen_lock.release()
 
@@ -660,7 +672,7 @@ COMPLEX_REACTION_NAME COMPLEX_REACTION_QUANTITY
 """
 def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
     #Get number of lines in file
-
+    global moon_ingredients
     NumofThreads = sum(1 for line in open(file))
     threadList = []
     if check_file(file):
@@ -690,6 +702,7 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
                 materialquantity = parts_k[0]
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
                 print(materialname + " " + str(runs_required))
+                #moon_ingredients[materialname] = runs_required
     else:
         print("Error: " + file + " does not exist")
 
@@ -708,11 +721,13 @@ The Main function
 There is a lot of random stuff commented out here as I tend to uncomment them for various uses
 """
 def main():
+
+    #load_evedb("eve.db")
     get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
     #MoonGooGUI.MoonGooGui()
     #multi_stuff()
     #unload_blueprintsyaml()
-    #load_evedb("eve.db")
+    #create_DB("stuff.db")
     #fleet_overwatch("harpy", 1, 'sajuukthanatoskhar')
     #print(get_market_price("The Forge","Tungsten Carbide"))
     #print(get_market_price("The Forge", "Titanium Carbide"))
@@ -725,7 +740,8 @@ def main():
     # print(get_market_price("The Forge", "Nanotransistors"))
     # #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
     # print(get_market_price("The Forge", "Fullerides"))
-    #print(get_market_price("The Forge", "Ferrogel"))
+
+    #print(get_market_price("The Forge", "Ferrogel")
     #print(get_market_price("The Forge", "Fernite Carbide"))
     #print(get_market_price("The Forge", "Fermionic Condensates"))
     #print(get_market_price("The Forge", "Crystalline Carbonide"))
@@ -829,4 +845,10 @@ screen_lock = threading.Semaphore(value=1)
 start_time = time.time()
 main()
 all(lock.acquire() for lock in locks)
+print("***********************************************")
+for i in moon_ingredients:
+    print("%s %d"%(i,moon_ingredients[i]))
+print("%s Mil ISK"%str(totalcost/1E6))
 print("%s seconds" % (time.time() - start_time))
+
+
