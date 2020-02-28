@@ -549,23 +549,26 @@ requests.put(url, data=json.dumps(
 }))
 """
 
-"""
-Retrieves a ship's id
-Input is the name of the ship (capitalisation is required)
-output is the ship's id
-Implemented for multithreading based functions only"""
+
 def getshiptypeid(name):
+    """
+    Retrieves a ship's id
+    Input is the name of the ship (capitalisation is required)
+    output is the ship's id
+    Implemented for multithreading based functions only"""
     reader = codecs.getreader("utf-8")
     ship_id = json.load(reader(req_esi(
         'search/?categories=inventorytype&datasource=tranquility&language=en-us&search=%s&strict=true' % (name))))
     print(ship_id["inventorytype"][0])
     return ship_id["inventorytype"][0]
 
-"""
-Reads the blueprints.yaml file and translates it into a simpler file that states the name of the blueprint nad its output quantity
-Not yet implemented for drugs
-"""
+
 def unload_blueprintsyaml():
+    """
+    Reads the blueprints.yaml file and translates it into a simpler file that states the name of the blueprint and its
+    output quantity
+    Not yet implemented for drugs
+    """
     with open("blueprints.yaml", 'r') as stream:
         file_write = codecs.open("blueprints.etf", "w", "utf-8")
         config = yaml.safe_load(stream)
