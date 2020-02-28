@@ -34,10 +34,7 @@ locks = []
 
 
 def req_esi(request_esi):
-    if _debug == 1:
-        print("https://esi.evetech.net/latest/" + request_esi)
-    wp = urllib.request.urlopen("https://esi.evetech.net/latest/" + request_esi)
-
+    wp = urllib.request.urlopen("https://esi.evetech.net/dev/" + request_esi)
     return wp
 
 
@@ -48,7 +45,7 @@ def req_fuzzwork(request):
 
 def threaded_reaction_cost(thread_lock_no, materialname,runs_required,market_hub,alliance_home_region):
     #TODO:reactioncost
-    print("calculating cost of reaction using" + str(thread_lock_no))
+    print("calculating cost of " + materialname + " reaction using" + str(thread_lock_no))
     reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
     thread_lock_no.release()
 
@@ -317,9 +314,7 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
 
         i = i + 1
     # How many simple reactions?
-    print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
-
-
+    #print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
     global totalcost
     totalcost += total_raw_input
     #if screen_lock in globals():
@@ -685,7 +680,10 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
             for line in file_to_read:
                 parts_k = line.split()
                 materialname = str(' '.join(parts_k[1:]))
-                materialquantity = parts_k[0]
+                try:
+                    materialquantity = parts_k[0]
+                except:
+                    print("Index Error: ".format(line))
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
 
                 a_lock = _thread.allocate_lock()
@@ -726,6 +724,7 @@ The Main function
 There is a lot of random stuff commented out here as I tend to uncomment them for various uses
 """
 def main():
+
     #load_evedb("eve.db")
     get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
     #MoonGooGUI.MoonGooGui()
@@ -744,7 +743,8 @@ def main():
     # print(get_market_price("The Forge", "Nanotransistors"))
     # #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
     # print(get_market_price("The Forge", "Fullerides"))
-    # #print(get_market_price("The Forge", "Ferrogel"))
+
+    #print(get_market_price("The Forge", "Ferrogel")
     #print(get_market_price("The Forge", "Fernite Carbide"))
     #print(get_market_price("The Forge", "Fermionic Condensates"))
     #print(get_market_price("The Forge", "Crystalline Carbonide"))
