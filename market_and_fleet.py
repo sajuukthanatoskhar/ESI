@@ -680,7 +680,10 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
             for line in file_to_read:
                 parts_k = line.split()
                 materialname = str(' '.join(parts_k[1:]))
-                materialquantity = parts_k[0]
+                try:
+                    materialquantity = parts_k[0]
+                except:
+                    print("Index Error: ".format(line))
                 runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
 
                 a_lock = _thread.allocate_lock()
