@@ -21,6 +21,7 @@ import authpython
 import pythonserver
 from operator import itemgetter
 from collections import OrderedDict
+
 global totalcost
 totalcost = 0
 global _debug
@@ -43,18 +44,20 @@ def req_fuzzwork(request):
     return wp
 
 
-def threaded_reaction_cost(thread_lock_no, materialname,runs_required,market_hub,alliance_home_region):
-    #TODO:reactioncost
+def threaded_reaction_cost(thread_lock_no, materialname, runs_required, market_hub, alliance_home_region):
     print("calculating cost of " + materialname + " reaction using" + str(thread_lock_no))
-    reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
+    reaction_cost(materialname, runs_required, market_hub, alliance_home_region)
     thread_lock_no.release()
 
 
-
 '''
-One time run function
 '''
 def load_evedb(eve_db_file):
+    '''
+    One time run function
+    :param eve_db_file:
+    :return:
+    '''
     conn = sqlite3.connect(eve_db_file)
     cur = conn.cursor()
     cur.execute("SELECT * FROM invtypes")
@@ -66,10 +69,13 @@ def load_evedb(eve_db_file):
         file_write.write(str(outputfromsqlite) + "\n")
     file_write.close()
 
+
 """
 This gets the item_id from the *.etf listed
 returns type_id as an integer value
 """
+
+
 def get_typeid(name):
     with open("eve_inv_types.etf", mode="r", encoding="utf-8") as sourcefile:
         for line in sourcefile:
@@ -84,11 +90,14 @@ def get_typeid(name):
             if str(name) == str(itemname_k):
                 return type_id
 
+
 '''
 Gives the region_id
 Input is region name
 returns region_id as integer
 '''
+
+
 def get_region(name):
     with open("regions_constellations_systems.etf", mode="r", encoding="utf-8") as sourcefile:
         for line in sourcefile:
@@ -103,12 +112,15 @@ def get_region(name):
             if str(name) == str(itemname_k):
                 return region_id
 
+
 '''
 Is reciprocal function of get_typeid
 Gives the item name
 Input is item input
 returns item name as string
 '''
+
+
 def get_name(item_id_input):
     with open("eve_inv_types.etf", mode="r", encoding="utf-8") as sourcefile:
         for line in sourcefile:
@@ -121,12 +133,15 @@ def get_name(item_id_input):
             if int(item_id_input) == int(item_id):
                 return item_name
 
+
 """
 Returns the output from a blueprint
 Doesn't deal with drugs very well (rip)
 input is reaction id
 returns output quantity as string
 """
+
+
 def get_reaction_output_quantity(reaction_id):
     with open("blueprints.etf", mode="r", encoding="utf-8") as sourcefile:
         for line in sourcefile:
@@ -142,12 +157,15 @@ Function gets market price in target region
 region is name of a region in Tranquility
 itemtype is the name of an item
 """
+
+
 def get_market_price(region, itemtype):
     type_id_request = get_typeid(itemtype)
     region_id = get_region(region)
     reader = codecs.getreader("utf-8")
     # pw = json.load(reader(req_esi("alliances/names/?alliance_ids=1000171,498125261&datasource=tranquility")))
-    pw = json.load(reader(req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
+    pw = json.load(reader(
+        req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
     # pw = json.load(reader(req_esi("markets/10000002/orders/?order_type=sell&type_id=24702&datasource=tranquility")))
     ordered_list = print_ordered_JSON(pw, type_id_request, region_id, region, itemtype)
     ordered_list_index_total = len(ordered_list)
@@ -198,13 +216,14 @@ def get_market_price(region, itemtype):
         i = i + 1
         """
 
-
 # (7:47:51 AM) relay: <Skyvyr> uhh, requests.put(url, headers={auththoken shit})
 
 '''
 Parses the json from the ordered market order from get_market_price(x,y,z,a)
 Input is json_market_order_part
 '''
+
+
 def print_ordered_JSON(json_market_order_part, type_id_request, region_id, region, itemtype):
     i = 0
     marketorders = []
@@ -221,14 +240,18 @@ def print_ordered_JSON(json_market_order_part, type_id_request, region_id, regio
     i = 0
     return marketorders
 
+
 """
 Class defining a market order that is useful for gauging its cost, could've used a dict but I didn't like how much formatting and work is required whereas a class solves it easily enough for me
 """
+
+
 class market_item():
     def __init__(self, itemtype, volumeremain, cost):
         self.itemtype = itemtype
         self.volumeremain = volumeremain
         self.cost = cost
+
 
 """
 Get the blueprint details from fuzzworks
@@ -236,16 +259,21 @@ Example - https://www.fuzzwork.co.uk/blueprint/api/blueprint.php?typeid=22457
 Input is the name of the blueprint, you have to include the ' Blueprint' or ' Reaction Formula', note the spaces
 Output is a JSON blob for the blueprint
 """
+
+
 def get_blueprint_details(name):
     reader = codecs.getreader("utf-8")
     type_id_request = get_typeid(name)
     js_wp = json.load(reader(req_fuzzwork(type_id_request)))
     return js_wp
 
+
 """
 Getting Reaction Output using the blueprints.yaml
 Deprecated but kept to show previous mistakes
 """
+
+
 def get_reactionoutput(reaction_togetoutputof):
     with open("blueprints.yaml", 'r') as stream:
         config = yaml.safe_load(stream)
@@ -254,16 +282,16 @@ def get_reactionoutput(reaction_togetoutputof):
         return config[int(reaction_togetoutputof)]["activities"]["reaction"]["products"][0]["quantity"]
 
 
-
-
 """
 Calculates complex reaction expenditure and revenue based on the get_market_price(x,y) function algorithm
 Input is the name of the complex reaction as a string, the number of runs of raw moon minerals, the marketregion where you are retrieving your prices from, homeregion has no functionality 
 The results are printed out and the return is void
 It prints out the resources needed for the runs and are formatted on the console in a way so that you can put them into multibuy
 """
+
+
 def reaction_cost(complex_reaction, runs, marketregion, homeregion):
-    #if screen_lock in globals():
+    # if screen_lock in globals():
     #    screen_lock.acquire()
     global moon_ingredients
     if complex_reaction != "Fullerides":
@@ -287,8 +315,8 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         # print(line['name'])
         tempprice = get_market_price(marketregion, line['name'])
         if 'Block' in line['name']:
-            #print(line['name'] + " " + str(tempprice * 5 * runs * 2))
-            #print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
+            # print(line['name'] + " " + str(tempprice * 5 * runs * 2))
+            # print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
             total_raw_input = tempprice * 5 * runs * 2 + total_raw_input
 
         else:
@@ -300,8 +328,8 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
         for line in superline['activityMaterials']['11']:
             tempprice = get_market_price(marketregion, line['name'])
             if 'Block' in line['name']:
-                #print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
-                #print(line['name'] + " " + str(runs * 100))  # + str(tempprice*5*runs))
+                # print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
+                # print(line['name'] + " " + str(runs * 100))  # + str(tempprice*5*runs))
                 # We will deal with this later
                 total_raw_input = total_raw_input + tempprice * 5 * runs
             else:
@@ -314,28 +342,32 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
 
         i = i + 1
     # How many simple reactions?
-    #print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
+    # print("Input cost is = " + str(round(float(total_raw_input / 1E6), 2)) + " M Isk")
     global totalcost
     totalcost += total_raw_input
-    #if screen_lock in globals():
+    # if screen_lock in globals():
     #    screen_lock.release()
+
 
 """
 Retrieves the different groups of fleets as described in the fleet_doc input as described in any of the doctrines folder's files
 It compresses the lists so that nothing is duplicated
 outputs are the fleet groups in group index and the group's ratios
 """
-def get_fleet_groups(fleet_doc):
 
-    #Compresses the duplicates of the roles of ships so you don't have duplicate shiptypes
+
+def get_fleet_groups(fleet_doc):
+    # Compresses the duplicates of the roles of ships so you don't have duplicate shiptypes
     groups = list(set(fleet_doc.allowedshipsrole))
     group_ratio = []
 
-    ratio_index_list = [i for i in range(len(fleet_doc.allowedshipsrole)) if not i == fleet_doc.allowedshipsrole.index(fleet_doc.allowedshipsrole[i])]
+    ratio_index_list = [i for i in range(len(fleet_doc.allowedshipsrole)) if
+                        not i == fleet_doc.allowedshipsrole.index(fleet_doc.allowedshipsrole[i])]
     # These find the indexes being used... I didn't write this code and is hard to read holy shit. TODO: Learn how to code in python
     ratioindex = [i for j, i in enumerate(fleet_doc.allowedshipsratio) if j not in ratio_index_list]
     groupindex = [i for j, i in enumerate(fleet_doc.allowedshipsrole) if j not in ratio_index_list]
-    return groupindex,ratioindex
+    return groupindex, ratioindex
+
 
 """
 Reads through the fleetjson (fleet json blob input) and checks against the fleet doctrine if the 
@@ -344,38 +376,47 @@ fleet doctrine input is a fleet_doctrine
 
 This function is very important and is hard to get your head around.  
 """
+
+
 def process_fleet_comp(fleetjson, length, fleet_doctrine):
     i = 0
-    fleet_groups,group_ratio = get_fleet_groups(fleet_doctrine)
-    fleet_group_count = list(range(0,len(group_ratio)))
+    fleet_groups, group_ratio = get_fleet_groups(fleet_doctrine)
+    fleet_group_count = list(range(0, len(group_ratio)))
     i = 0
-    while i < len(fleet_group_count):  #Resets fleet group count, probably can delete  #TODO: Please check!
+    while i < len(fleet_group_count):  # Resets fleet group count, probably can delete  #TODO: Please check!
         fleet_group_count[i] = 0
-        i = i+1
-    i = j = z =0
-    while z < length:  #Loop through every member in the fleet to....
+        i = i + 1
+    i = j = z = 0
+    while z < length:  # Loop through every member in the fleet to....
         checkshipname = get_name(fleetjson[z]["ship_type_id"])
         i = 0
-        while i < len(fleet_doctrine.allowedships): #...check if they have one of the allowed ship types by looping through them and then...
+        while i < len(
+                fleet_doctrine.allowedships):  # ...check if they have one of the allowed ship types by looping through them and then...
             if checkshipname == fleet_doctrine.allowedships[i]:
-               # print(checkshipname + " is allowed")
+                # print(checkshipname + " is allowed")
                 j = 0
-                while j<len(fleet_group_count): #...it's added to the right fleet group by checking their ship belongs to that group
+                while j < len(
+                        fleet_group_count):  # ...it's added to the right fleet group by checking their ship belongs to that group
                     if fleet_doctrine.allowedshipsrole[i] == fleet_groups[j]:
-                        #add 1 to the group in fleet_group_count if the ship role matches
-                        fleet_group_count[j] =fleet_group_count[j] +1  #todo: implement the weight where the '1' is in this line, it's really simple but I am lazy
+                        # add 1 to the group in fleet_group_count if the ship role matches
+                        fleet_group_count[j] = fleet_group_count[
+                                                   j] + 1  # todo: implement the weight where the '1' is in this line, it's really simple but I am lazy
 
-                    j = j +1
+                    j = j + 1
                 # add ship's weight to total group weight
-            i=i+1
+            i = i + 1
         z = z + 1
-    return fleet_groups,group_ratio,fleet_group_count
+    return fleet_groups, group_ratio, fleet_group_count
+
+
 '''
 This is the main class for the fleet doctrine
 It has (in order of appearance) the ships that are included in the doctrine, the allowed ships' ratios, their roles and their weighting in those roles (t1 logi should be rated half)
 There is no major method
 The static variables may be removed
 '''
+
+
 class doctrine:
     allowedships = []
     allowedshipsratio = []
@@ -395,32 +436,38 @@ class doctrine:
             self.allowedshipsrole.append(pw[2])
             self.allowedshipsweight.append(pw[3])
 
+
 """
 Reading the tokens made from the pythonserver.py functions from a file (mostly it should be 'key.key')
 Input is the file
 The file is formatted into two columns, one line
 output are the two tokens
 """
+
+
 def read_tokens(file):
     keys_file = open(file, "r")
     access_token = refresh_token = 0
     for lines in keys_file:
         pw = lines.split(" ")  # [0] is access_token, #[1] is refresh
-        access_token = pw[0] #First column
-        refresh_token = pw[1] #Second Column
+        access_token = pw[0]  # First column
+        refresh_token = pw[1]  # Second Column
     print(authpython.refresh('1', refresh_token))
     return access_token, refresh_token
+
 
 """
 Retrieves the Fleet ID that is being led by the FC
 Input is the FC's name and their access_token (Required, needs a refreshed auth token)
 Output is the fleet id
 """
+
+
 def get_fleet_id(FleetCommanderName, access_token):
     reader = codecs.getreader("utf-8")
     id_json = json.load(reader(req_esi(
         'search/?categories=character&datasource=tranquility&language=en-us&search=%s&strict=false' % (
-        FleetCommanderName))))
+            FleetCommanderName))))
     FleetCommandID = str(id_json['character']).replace("[", "")
     FleetCommandID = str(FleetCommandID).replace("]", "")
     fleet_id_json = json.load(
@@ -437,8 +484,9 @@ Runs until the fleet FC leaves fleet, the cluster shuts down (for DT hopefully!)
 Also, the tokens need to come from the Fleet Boss.!!
 """
 
+
 def fleet_overwatch(Fleet_Type, state_of_fleet, FleetCommanderName):
-    access= input('Do you need to run the server?')
+    access = input('Do you need to run the server?')
     if access is 'a':
         pythonserver.run()
     ratio_scores = []
@@ -456,31 +504,30 @@ def fleet_overwatch(Fleet_Type, state_of_fleet, FleetCommanderName):
         fleetmemberslength = len(fleetmembersjson)
         print(fleetmemberslength)
         current_doctrine = doctrine(Fleet_Type)
-        fleet_groups, group_ratio, fleet_group_count = process_fleet_comp(fleetmembersjson, fleetmemberslength, current_doctrine)
-        #fleet_groups is for 'dps,logi,whatever'
-        #group_ratio is the assigned values
-        #ratiolength = len(fleet_group_count)
+        fleet_groups, group_ratio, fleet_group_count = process_fleet_comp(fleetmembersjson, fleetmemberslength,
+                                                                          current_doctrine)
+        # fleet_groups is for 'dps,logi,whatever'
+        # group_ratio is the assigned values
+        # ratiolength = len(fleet_group_count)
         ratio_scores = []
         scores = {}
-        for i in range(0,len(fleet_group_count)):
-            ratio_scores.append(float(fleet_group_count[i]/float(group_ratio[i])))
+        for i in range(0, len(fleet_group_count)):
+            ratio_scores.append(float(fleet_group_count[i] / float(group_ratio[i])))
         minimum = max(ratio_scores)
 
-        for i in range(0,len(fleet_group_count)):
+        for i in range(0, len(fleet_group_count)):
             scores[fleet_groups[i]] = float(ratio_scores[i])
 
-        #sorted(scores.items(), key=lambda x:float(x[1]))
-        scores = OrderedDict(sorted(scores.items(),key=lambda x:float(x[1])))
-        #x = {'heavy_tackle': 1.0, 'recon': 0.0, 'ewar': 3.0, 'interdictor': 1.0, 'dps': 2.75, 'tackle': 0.0, 'logistics': 2.0}
-        #orderedx = OrderedDict(sorted(x.items(),key=lambda x:float(x[1])))
-        #print(x)
+        # sorted(scores.items(), key=lambda x:float(x[1]))
+        scores = OrderedDict(sorted(scores.items(), key=lambda x: float(x[1])))
+        # x = {'heavy_tackle': 1.0, 'recon': 0.0, 'ewar': 3.0, 'interdictor': 1.0, 'dps': 2.75, 'tackle': 0.0, 'logistics': 2.0}
+        # orderedx = OrderedDict(sorted(x.items(),key=lambda x:float(x[1])))
+        # print(x)
 
-#        for i in range(0,len(ratio_scores)):
-#            for j in range(0,len(ratio_scores)):
-#                if ratio_scores[j] < minimum:
-#                    minimum = ratio_scores
-
-
+        #        for i in range(0,len(ratio_scores)):
+        #            for j in range(0,len(ratio_scores)):
+        #                if ratio_scores[j] < minimum:
+        #                    minimum = ratio_scores
 
         updatemessage = " "
 
@@ -514,12 +561,10 @@ def fleet_overwatch(Fleet_Type, state_of_fleet, FleetCommanderName):
         timeer = timeer + "\n****DOCTRINE SHIPS NEEDED****\n"
         for keys in scores.items():
             timeer = timeer + keys[0] + ">"
-        timeer = timeer+ "else\n"
+        timeer = timeer + "else\n"
 
-        #for i in range(0,len(fleet_groups)):
-            #timeer = timeer + " Fleet Group ratioscore/number (" + str(fleet_groups[i]) + ") :" + str(ratio_scores[i]) + "("+str(fleet_group_count[i]) + ")\n"
-
-
+        # for i in range(0,len(fleet_groups)):
+        # timeer = timeer + " Fleet Group ratioscore/number (" + str(fleet_groups[i]) + ") :" + str(ratio_scores[i]) + "("+str(fleet_group_count[i]) + ")\n"
 
         """status_put =requests.put(url, data=json.dumps(
             {
@@ -532,8 +577,8 @@ def fleet_overwatch(Fleet_Type, state_of_fleet, FleetCommanderName):
         time.sleep(2)
         print(authpython.refresh('1', refresh_token))
         print(status_put)
-        del(current_doctrine)
-        del(scores)
+        del (current_doctrine)
+        del (scores)
     return
 
 
@@ -600,6 +645,8 @@ def unload_blueprintsyaml():
 """
 Creates a database using the file name as input.  If the table in the database exists, it won't be modified
 """
+
+
 def create_DB(db_file_name):
     conn = sqlite3.connect(db_file_name)
     c = conn.cursor()
@@ -619,6 +666,8 @@ Experimental Function using sqlite
 Not implemented
 Input is ship id and database connection (not database itself and is the 'conn' variable output from create_db)
 """
+
+
 def get_shipname_from_db(name, db):
     db.execute('select id,name from evestuff WHERE id="%s"' % name)
     rows = db.fetchall()
@@ -626,10 +675,13 @@ def get_shipname_from_db(name, db):
         print(row[1])
     return row[1]
 
+
 """
 Experimental Function using threading
 Not implemented
 """
+
+
 def multi_stuff():
     conn = sqlite3.connect('evetype.db')
     c = conn.cursor()
@@ -647,16 +699,19 @@ def multi_stuff():
     for i in threadList:
         i.join()
 
+
 """
 Checks if the file exists
 """
+
+
 def check_file(file):
-        if os.path.exists(file):
-            #print(str(file + " Exists"))
-            return 1
-        else:
-            #print(str(file + " Does not exists"))
-            return 0
+    if os.path.exists(file):
+        # print(str(file + " Exists"))
+        return 1
+    else:
+        # print(str(file + " Does not exists"))
+        return 0
 
 
 """
@@ -673,13 +728,15 @@ file = file that you have dumped the following format
 COMPLEX_REACTION_NAME COMPLEX_REACTION_QUANTITY
 
 """
-def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
-    #Get number of lines in file
+
+
+def get_number_of_runs_for_build(market_hub, alliance_home_region, file):
+    # Get number of lines in file
     global moon_ingredients
     NumofThreads = sum(1 for line in open(file))
     threadList = []
     if check_file(file):
-        with open(file,mode="r") as file_to_read: #Does the reaction cost
+        with open(file, mode="r") as file_to_read:  # Does the reaction cost
             for line in file_to_read:
                 parts_k = line.split()
                 materialname = str(' '.join(parts_k[1:]))
@@ -687,56 +744,65 @@ def get_number_of_runs_for_build(market_hub,alliance_home_region,file):
                     materialquantity = parts_k[0]
                 except:
                     print("Index Error: ".format(line))
-                runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
+                runs_required = math.ceil(float(materialquantity) / (2 * float(
+                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
 
                 a_lock = _thread.allocate_lock()
                 a_lock.acquire()
                 locks.append(a_lock)
-                _thread.start_new_thread(threaded_reaction_cost,(a_lock,materialname,runs_required,market_hub,alliance_home_region))
+                _thread.start_new_thread(threaded_reaction_cost,
+                                         (a_lock, materialname, runs_required, market_hub, alliance_home_region))
 
-                #t = threading.Thread(target=reaction_cost, args=[materialname,runs_required,market_hub,alliance_home_region])
-                #t.daemon = True
-                #t.start()
-                #threadList.append(t)
-                #t.join()
+                # t = threading.Thread(target=reaction_cost, args=[materialname,runs_required,market_hub,alliance_home_region])
+                # t.daemon = True
+                # t.start()
+                # threadList.append(t)
+                # t.join()
 
-                #reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
-        with open(file, mode="r") as file_to_read:  #Summarises the complex reactions
+                # reaction_cost(materialname,runs_required,market_hub,alliance_home_region)
+        with open(file, mode="r") as file_to_read:  # Summarises the complex reactions
             for line in file_to_read:
                 parts_k = line.split()
                 materialname = str(' '.join(parts_k[1:]))
                 materialquantity = parts_k[0]
-                runs_required = math.ceil(float(materialquantity)/(2*float(get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
+                runs_required = math.ceil(float(materialquantity) / (2 * float(
+                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
                 print(materialname + " " + str(runs_required))
-                #moon_ingredients[materialname] = runs_required
+                # moon_ingredients[materialname] = runs_required
     else:
         print("Error: " + file + " does not exist")
+
 
 """
 This function takes in the name of a complex reaction
 """
+
+
 def get_complex_material_reaction_name(complex_reaction):
-    #print(complex_reaction)
+    # print(complex_reaction)
     if complex_reaction != "Fullerides":
         complexr = complex_reaction + " Reaction Formula"
     else:
         complexr = complex_reaction[:-1] + " Reaction Formula"
     return complexr
+
+
 """
 The Main function
 There is a lot of random stuff commented out here as I tend to uncomment them for various uses
 """
-def main():
 
-    #load_evedb("eve.db")
-    get_number_of_runs_for_build("The Forge","Esoteria","outputdump.txt")
-    #MoonGooGUI.MoonGooGui()
-    #multi_stuff()
-    #unload_blueprintsyaml()
-    #create_DB("stuff.db")
-    #fleet_overwatch("harpy", 1, 'sajuukthanatoskhar')
-    #print(get_market_price("The Forge","Tungsten Carbide"))
-    #print(get_market_price("The Forge", "Titanium Carbide"))
+
+def main():
+    # load_evedb("eve.db")
+    get_number_of_runs_for_build("The Forge", "Esoteria", "outputdump.txt")
+    # MoonGooGUI.MoonGooGui()
+    # multi_stuff()
+    # unload_blueprintsyaml()
+    # create_DB("stuff.db")
+    # fleet_overwatch("harpy", 1, 'sajuukthanatoskhar')
+    # print(get_market_price("The Forge","Tungsten Carbide"))
+    # print(get_market_price("The Forge", "Titanium Carbide"))
     # print(get_market_price("The Forge", "Terahertz Metamaterials"))
     # #print(get_market_price("The Forge", "Sylramic Fibers"))
     # print(get_market_price("The Forge", "Plasmonic Metamaterials"))
@@ -747,23 +813,23 @@ def main():
     # #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
     # print(get_market_price("The Forge", "Fullerides"))
 
-    #print(get_market_price("The Forge", "Ferrogel")
-    #print(get_market_price("The Forge", "Fernite Carbide"))
-    #print(get_market_price("The Forge", "Fermionic Condensates"))
-    #print(get_market_price("The Forge", "Crystalline Carbonide"))
+    # print(get_market_price("The Forge", "Ferrogel")
+    # print(get_market_price("The Forge", "Fernite Carbide"))
+    # print(get_market_price("The Forge", "Fermionic Condensates"))
+    # print(get_market_price("The Forge", "Crystalline Carbonide"))
 
-    #print(get_market_price("The Forge", "Ferrogel"))
-    #print(get_market_price("The Forge", "Photonic Metamaterials"))
-    #print(get_market_price("The Forge", "Hypersynaptic Fibers"))
-    #print(get_market_price("The Forge", "Sylramic Fibers"))
+    # print(get_market_price("The Forge", "Ferrogel"))
+    # print(get_market_price("The Forge", "Photonic Metamaterials"))
+    # print(get_market_price("The Forge", "Hypersynaptic Fibers"))
+    # print(get_market_price("The Forge", "Sylramic Fibers"))
 
-    #print(get_market_price("The Forge", "Paladin"))
-    #print(get_market_price("The Forge", "Plasmonic Metamaterials"))
-    #print(get_market_price("The Forge", "Nonlinear Metamaterials"))
+    # print(get_market_price("The Forge", "Paladin"))
+    # print(get_market_price("The Forge", "Plasmonic Metamaterials"))
+    # print(get_market_price("The Forge", "Nonlinear Metamaterials"))
 
-    #reaction_cost('Fernite Carbide', 500, "The Forge", "Esoteria")
-    #reaction_cost('Hypersynaptic Fibers', 300, "The Forge", "Esoteria")
-    #print(get_market_price("The Forge", "Tungsten Carbide")99999)
+    # reaction_cost('Fernite Carbide', 500, "The Forge", "Esoteria")
+    # reaction_cost('Hypersynaptic Fibers', 300, "The Forge", "Esoteria")
+    # print(get_market_price("The Forge", "Tungsten Carbide")99999)
     '''reaction_cost('Tungsten Carbide', 300, "The Forge", "Esoteria")
     reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
     reaction_cost('Crystalline Carbonide', 300, "The Forge", "Esoteria")
@@ -780,34 +846,34 @@ def main():
     reaction_cost('Fullerides', 250, "The Forge", "Esoteria")
     '''
 
-    #reaction_cost('Nanotransistors', 100, "The Forge", "Esoteria")
-    #reaction_cost('Hypersynaptic Fibers', 100, "The Forge", "Esoteria")
-    #reaction_cost('Terahertz Metamaterials', 136, "The Forge", "Esoteria")
+    # reaction_cost('Nanotransistors', 100, "The Forge", "Esoteria")
+    # reaction_cost('Hypersynaptic Fibers', 100, "The Forge", "Esoteria")
+    # reaction_cost('Terahertz Metamaterials', 136, "The Forge", "Esoteria")
 
-    #reaction_cost('Fullerides', 100, "The Forge", "Esoteria")
+    # reaction_cost('Fullerides', 100, "The Forge", "Esoteria")
 
-    #reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
-    #reaction_cost('Fullerides', 400, "The Forge", "Esoteria")
-    #reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
+    # reaction_cost('Titanium Carbide', 300, "The Forge", "Esoteria")
+    # reaction_cost('Fullerides', 400, "The Forge", "Esoteria")
+    # reaction_cost('Terahertz Metamaterials', 100, "The Forge", "Esoteria")
 
-    #reaction_cost('Phenolic Composites', 200, "The Forge", "Esoteria")
+    # reaction_cost('Phenolic Composites', 200, "The Forge", "Esoteria")
 
-    #reaction_cost('Photonic Metamaterials', 75, "The Forge", "Esoteria")
-    #reaction_cost('Ferrogel', 75, "The Forge", "Esoteria")
-    #reaction_cost('Nonlinear Metamaterials', 100, "The Forge", "Esoteria")
-    #reaction_cost('Crystalline Carbonide', 200, "The Forge", "Esoteria")
+    # reaction_cost('Photonic Metamaterials', 75, "The Forge", "Esoteria")
+    # reaction_cost('Ferrogel', 75, "The Forge", "Esoteria")
+    # reaction_cost('Nonlinear Metamaterials', 100, "The Forge", "Esoteria")
+    # reaction_cost('Crystalline Carbonide', 200, "The Forge", "Esoteria")
 
-    #reaction_cost('Tungsten Carbide', 200, "The Forge", "Esoteria")
-    #reaction_cost('Sylramic Fibers', 200, "The Forge", "Esoteria")
-    #reaction_cost('Titanium Carbide', 100, "The Forge", "Esoteria")
-    #reaction_cost('Fermionic Condensates', 40, "The Forge", "Esoteria")
-    #reaction_cost('Crystalline Carbonide', 200, "The Forge", "Esoteria")
-    #reaction_cost('Plasmonic Metamaterials',50,"The Forge","Esoteria")
-    #reaction_cost('Nonlinear Metamaterials', 50, "The Forge", "Esoteria")
-    #reaction_cost('Photonic Metamaterials', 100, "The Forge", "Esoteria")
-    #reaction_cost('Phenolic Composites', 100, "The Forge", "Esoteria")
-    #reaction_cost('Fernite Carbide', 100, "The Forge", "Esoteria")
-    #reaction_cost('Fermionic Condensates',25,'The Forge','Esoteria')
+    # reaction_cost('Tungsten Carbide', 200, "The Forge", "Esoteria")
+    # reaction_cost('Sylramic Fibers', 200, "The Forge", "Esoteria")
+    # reaction_cost('Titanium Carbide', 100, "The Forge", "Esoteria")
+    # reaction_cost('Fermionic Condensates', 40, "The Forge", "Esoteria")
+    # reaction_cost('Crystalline Carbonide', 200, "The Forge", "Esoteria")
+    # reaction_cost('Plasmonic Metamaterials',50,"The Forge","Esoteria")
+    # reaction_cost('Nonlinear Metamaterials', 50, "The Forge", "Esoteria")
+    # reaction_cost('Photonic Metamaterials', 100, "The Forge", "Esoteria")
+    # reaction_cost('Phenolic Composites', 100, "The Forge", "Esoteria")
+    # reaction_cost('Fernite Carbide', 100, "The Forge", "Esoteria")
+    # reaction_cost('Fermionic Condensates',25,'The Forge','Esoteria')
     # unload_blueprintsyaml()
     # print(str(get_reaction_output_quantity(str(46210))))
     # load_evedb("eve.db")
@@ -847,14 +913,13 @@ def main():
     #     # print(str(pw[i]["type_id"])+"\t\t\t"+str(pw[i]["volume_total"])+"\t\t\t"+str(pw[i]["price"]))
     #     i = i + 1
 
+
 screen_lock = threading.Semaphore(value=1)
 start_time = time.time()
 main()
 all(lock.acquire() for lock in locks)
 print("***********************************************")
 for i in moon_ingredients:
-    print("%s %d"%(i,moon_ingredients[i]))
-print("%s Mil ISK"%str(totalcost/1E6))
+    print("%s %d" % (i, moon_ingredients[i]))
+print("%s Mil ISK" % str(totalcost / 1E6))
 print("%s seconds" % (time.time() - start_time))
-
-
