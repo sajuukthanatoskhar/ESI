@@ -2,3 +2,4 @@
 *.etf
 venv/
 *.json
+*.env
