@@ -1,6 +1,6 @@
 from mock import patch, Mock, MagicMock
 import pytest
-import pytest_mock
+
 from market_and_fleet import get_typeid
 
 class Test_API:

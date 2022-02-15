@@ -1,0 +1,3 @@
+[submodule "fuzzworks_bpos"]
+	path = fuzzworks_bpos
+	url = https://github.com/sajuukthanatoskhar/fuzzworks_bpos.git
