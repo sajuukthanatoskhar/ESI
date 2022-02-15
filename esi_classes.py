@@ -1,16 +1,15 @@
 import dataclasses
+import datetime
 import io
 import os
 import queue
 import webbrowser
 from typing import List, Union, Optional
-import datetime
-
+import esi_search_functions
 import esipy
 import pyswagger.primitives
 
 import esi_market
-
 
 
 @dataclasses.dataclass
@@ -40,8 +39,12 @@ class market_history_entry:
         today = datetime.datetime.today()
         return (today - self.date).days
 
-    def export_to_json(self):
-        pass
+    def export_to_json(self) -> None:
+        """
+        Exports market history to json
+        :return: None
+        """
+        return None
 
     @classmethod
     def import_from_json(cls, input_json_file):
@@ -57,9 +60,9 @@ class market_item_history:
     item_typeid: str = ""
     regionid: str = ""
     region_name: str = ""
-    required_qty : int = 0 # Reserved for market watcher, not used for actual history
-    current_qty_in_region: int = 0 # Reserved for market watcher, not used for actual history
-    to_be_produced : int = 0  # Reserved for market watcher, not used for actual history
+    required_qty: int = 0  # Reserved for market watcher, not used for actual history
+    current_qty_in_region: int = 0  # Reserved for market watcher, not used for actual history
+    to_be_produced: int = 0  # Reserved for market watcher, not used for actual history
 
     def calculate_quantity_required(self):
         """
@@ -67,8 +70,6 @@ class market_item_history:
         :return:
         """
         self.to_be_produced = self.required_qty - self.current_qty_in_region
-
-
 
     def get_market_history(self):
         """
@@ -103,8 +104,10 @@ class market_item_history:
         number_of_orders = 0
         for entry in market_data:
             number_of_orders += entry.volume
-
-        return number_of_orders / no_of_days
+        try:
+            return number_of_orders / no_of_days
+        except ZeroDivisionError:
+            return 1
 
 
 @dataclasses.dataclass
@@ -126,8 +129,8 @@ class esi_eve_market_order:
     type_id: int = 456
     volume_remain: int = 4422
     volume_total: int = 123456
-    item_name : str = "namename"
-    type_name : str = "typetype"
+    item_name: str = "namename"
+    type_name: str = "typetype"
 
     def convert_issued_to_datetime(self) -> None:
         """
@@ -139,32 +142,17 @@ class esi_eve_market_order:
         elif self.issued is pyswagger.primitives.Datetime:
             self.issued = datetime.datetime.fromisoformat(self.issued)
 
-
     def update_values(self, **kwargs):
         """
         Updates all values from kwargs
         :param kwargs:
         :return:
         """
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             try:
-                self.__setattr__(k,v)
-            except ValueError as e:
+                self.__setattr__(k, v)
+            except ValueError:
                 print(f"{k} not present!")
-
-
-class character:
-    id: int
-    name: str
-    market_orders: List[esi_eve_market_order]
-
-    def get_market_orders(self, api_obj) -> Optional[dict]:
-        self.market_orders = [order for order in esi_market.get_market_orders(self.id, self.name, api_obj)]
-        return 0
-
-    def convert_time_in_orders(self):
-        for item in self.market_orders:
-            item.convert_issued_to_datetime()
 
 
 class corporation:
@@ -172,28 +160,31 @@ class corporation:
     name: str
     market_orders: List[esi_eve_market_order]
 
-    def get_market_orders(self, api_obj) -> Optional[dict]:
-        self.market_orders = [order for order in esi_market.get_market_orders(self.id, self.name, api_obj)]
-        return 0
+    def get_id(self, api_obj):
+        return
+
+    # @property
+    # def old_market_orders(self) -> List[esi_eve_market_order]:
+    #     if open(f"{self.id}_{self.name}_market_orders"):
+    #         print("Market orders from previous day")
+
+    # def get_market_orders(self, api_obj) -> Optional[dict]:
+    #     self.market_orders = [order for order in esi_market.get_market_orders(self.id, self.name, api_obj)]
+    #     return 0
 
     def convert_time_in_orders(self):
         for item in self.market_orders:
             item.convert_issued_to_datetime()
 
-@dataclasses.dataclass
-class Esi_Security_Details:
-    call_back: str = ""
-    client_id: str = ""
-    secret_key: str = ""
-    mw_refresh_key: str = ""
 
-    def update_from_env_f(self, env_file):
-        import dotenv
-        dotenv.load_dotenv(env_file)
-        self.secret_key = os.environ.get("env_secret_key")
-        self.client_id = os.environ.get("env_client_id")
-        self.call_back = os.environ.get("env_call_back")
-        self.mw_refresh_key = os.environ.get("env_refresh_key")
+def check_data_header(data):
+    x_page = None
+    try:
+        x_page = data.header.get('x-pages', None)
+    except AttributeError:
+        pass
+    return x_page
+
 
 
 class char_api_swagger_collection:
@@ -221,9 +212,19 @@ class char_api_swagger_collection:
             self.secret_key,
             headers={'User-Agent': 'Owned by Sajuukthanatoskhar'})
 
-    def get_id_via_api_comm(self, type_id, market_item_q: queue.Queue):
-        name = self.execute_api_command('get',"universe_types_type_id",type_id = type_id)['name']
-        market_item_q.put([name, type_id])
+    def get_id_via_api_comm(self, type_id, market_item_q: queue.Queue = None):
+        name = self.execute_api_command('get', "universe_types_type_id", type_id=type_id)['name']
+        if market_item_q:
+            market_item_q.put([name, type_id])
+            return
+        return name
+
+    def get_universe_name_via_api_comm(self, region_id, market_item_q: queue.Queue = None):
+        name = self.execute_api_command('get', "universe_names", type_id=region_id)['name']
+        if market_item_q:
+            market_item_q.put([name, region_id])
+            return
+        return name
 
     def refresh_token_key(self):
         self.security.update_token(
@@ -254,13 +255,14 @@ class char_api_swagger_collection:
             pass
         return client
 
-    def execute_api_command(self, type='get', api_command="characters_character_id_orders", queue_obj: queue.Queue = None, **kwargs):
+    def execute_api_command(self, type='get', api_command="characters_character_id_orders",
+                            queue_obj: queue.Queue = None, **kwargs):
         """
         Executes an api command, kwargs are for the inputs required for an api command
         """
         data = None
         combined_command = f"{type}_{api_command}"
-        x_page = None
+
         try:
             op = self.app.op[combined_command](**kwargs)
             data = self.client.request(op)
@@ -270,17 +272,20 @@ class char_api_swagger_collection:
             print(f"Unknown Error occurred -> {d}")
         if queue_obj:
             queue_obj.put(data.data)
-        try:
-            x_page = data.header.get('x-pages', None)
-        except AttributeError:
-            pass
+
+        x_page = check_data_header(data)
+        if not x_page:
+           pass # raise KeyError(f"data.header has no 'xpages'")
         try:
             extra_data = data.data
         except AttributeError:
-            pass
+            extra_data = None
+            print(f"data -> {data}?  Attribute error!")
+
+
         if x_page:
             if x_page[0] > 1:
-                for i in range(2,data.header.get('x-pages')[0]+1):
+                for i in range(2, data.header.get('x-pages')[0] + 1):
                     try:
                         kwargs['page'] = i
                         op = self.app.op[combined_command](**kwargs)
@@ -291,12 +296,87 @@ class char_api_swagger_collection:
                         print(f"Unknown Error occurred -> {d}")
                     extra_data.extend(data.data)
 
-
         return extra_data
 
     def get_char_id(self):
         return self.api_info['sub'].split(':')[-1]
 
+
+class character:
+    id: int = -1
+    name: str = ""
+    #
+    market_orders: List[esi_eve_market_order] = []
+
+    def get_market_orders(self, api_obj) -> Optional[dict]:
+        self.market_orders = [order for order in esi_market.get_market_orders(self.id, self.name, api_obj)]
+        return 0
+
+    def convert_time_in_orders(self):
+        for item in self.market_orders:
+            item.convert_issued_to_datetime()
+
+    def get_current_market_share(self, api_obj: char_api_swagger_collection):
+        """
+        Gets the market share for all order types that are on market
+        It gets each order, groups them by type id and region
+        :return:
+        """
+        current_id = None
+        temp_market_orders = set()
+        market_ids_to_check = set()
+        qty = 0
+        regions = set()
+        order : esi_eve_market_order
+
+        market_order_dict = {}
+
+        for order in self.market_orders:
+            # Get all market orders
+            market_ids_to_check.add(order.type_id)
+
+        ######
+
+
+        for order in self.market_orders:
+
+            if not market_order_dict.get(f'{order.type_id}', None):
+                market_order_dict[f'{order.type_id}'] = {}
+                market_order_dict[f'{order.type_id}'][f'{order.region_id}'] = order.volume_remain
+            else:# market_order_dict.get(f'{order.type_id}', {}).get(f'{order.region_id}', None):
+                market_order_dict[f'{order.type_id}'][f'{order.region_id}'] += order.volume_remain
+
+            print(f"{order.order_id} -> {api_obj.get_id_via_api_comm(order.type_id)} --> ++{order.volume_remain} --> {market_order_dict[f'{order.type_id}'][f'{order.region_id}']}")
+
+
+
+
+        return market_order_dict
+
+
+
+
+
+
+
+@dataclasses.dataclass
+class Esi_Security_Details:
+    call_back: str = ""
+    client_id: str = ""
+    secret_key: str = ""
+    mw_refresh_key: str = ""
+
+    def update_from_env_f(self, env_file):
+        import dotenv
+        dotenv.load_dotenv(env_file)
+        self.secret_key = os.environ.get("env_secret_key")
+        self.client_id = os.environ.get("env_client_id")
+        self.call_back = os.environ.get("env_call_back")
+        self.mw_refresh_key = os.environ.get("env_refresh_key")
+
+
+
 if __name__ == '__main__':
     import pyautogui
+
     pyautogui.press('F13')

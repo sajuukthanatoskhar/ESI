@@ -25,9 +25,3 @@ if __name__ == '__main__':
             print(e)
 
         print(f"{item.item} {int(item.get_market_velocity(item.filter_data_by_days_passed(30))*15)}")
-    pass
-
-
-
-    # items_analysed = [esi_market.get_market_history_item_region(item=item, region_name=target_region) for item in
-    #                   market_itemstocheck.items_to_analyse]
