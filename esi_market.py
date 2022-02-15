@@ -34,7 +34,6 @@ def get_market_orders(api_obj) -> Union[None, dict]:
 
 
     """
-
     return api_obj.execute_api_command('get', "characters_corporation_id_orders", character_id=api_obj.char_id)
 
 
@@ -47,7 +46,6 @@ def get_market_groups(api_obj) -> list[int]:
 def get_market_group_names(api_obj):
     import threading
     import queue
-    import concurrent.futures
     q = queue.Queue()
     tasks = []
     for group in get_market_groups(api_obj):
