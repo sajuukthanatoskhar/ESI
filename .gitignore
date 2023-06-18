@@ -4,3 +4,8 @@ venv/
 *.json
 *.env
 *.db
+*.pyc
+.idea/*
+eve.db.bz2
+__pycache__/*
+*.iml
