@@ -6,6 +6,7 @@ from typing import List
 import asyncio
 import esi_classes
 
+from concurrent.futures import ThreadPoolExecutor
 
 @dataclasses.dataclass
 class c_coordinate:
@@ -19,6 +20,9 @@ class c_coordinate:
         self.z = z
         return 1
 
+# Define a function that makes the API call for a single type ID
+def get_type_name(api_obj, type_id):
+    return type_id, api_obj.execute_api_command('get', 'universe_types_type_id', type_id=type_id)['name']
 
 @dataclasses.dataclass
 class structure:
@@ -46,39 +50,34 @@ class structure:
         :param api_obj:
         :return:
         """
+
+
         if self.str_id != '0':
             op = api_obj.execute_api_command('get', "markets_structures_structure_id", structure_id=self.str_id)
             market_data = op
             market_item_q = queue.Queue()
             tasks = []
-            # for item in market_data:
-            #     tasks.append(threading.Thread(target= api_obj.get_id_via_api_comm,
-            #                                   args = {
-            #                                       item['type_id'],
-            #                                       market_item_q
-            #                                   }))
-            # for idx, task in enumerate(tasks):
-            #     task.start()
-            #     task.join(timeout=1)
-
-            # while not market_item_q.empty():
-            #     k,v = market_item_q.get()
-            #     for order in market_data:
-            #         self.market_order_list.append(esi_classes.esi_eve_market_order())
-            #         if v == order['type_id']:
-            #             print(self.market_order_list[-1].item_name)
-            #             self.market_order_list[-1].update_values(**order)
-            #             self.market_order_list[-1].item_name = k
-            #             print(self.market_order_list[-1].item_name)
-
-
             for iteration, order in enumerate(market_data):
                 self.market_order_list.append(esi_classes.esi_eve_market_order())
                 self.market_order_list[-1].update_values(**order)
-                self.market_order_list[-1].item_name = \
-                api_obj.execute_api_command('get', "universe_types_type_id", type_id=order['type_id'])['name']
 
-                print(f"{order}, number {iteration} out of {len(market_data)}", end = "\r")
+                print(f"{order}, number {iteration} out of {len(market_data)}")
+
+            type_ids = [order.type_id for order in self.market_order_list]
+
+            # Create a thread pool with a maximum of 8 threads
+            with ThreadPoolExecutor(max_workers=1600) as executor:
+                # Submit the API calls to the thread pool and get the results
+
+                type_names = dict(executor.map(lambda id: get_type_name(api_obj, id), type_ids))
+
+            # Update item names for all orders in the loop
+            for order in self.market_order_list:
+                order.item_name = type_names.get(order.type_id, '<Unknown>')
+
+
+
+    #self.market_order_list[-1].item_name = api_obj.execute_api_command('get', "universe_types_type_id", type_id=order['type_id'])['name']
             return 0  # successful
         return 1  # Not successful
 

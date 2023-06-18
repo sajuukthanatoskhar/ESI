@@ -117,7 +117,7 @@ class esi_eve_market_order:
     """
     duration: int = 30
     escrow: float = 45.6
-    is_buy_order: bool = True
+    is_buy_order: bool = False
     is_corporation: bool = False
     issued: Union[str, datetime.datetime, pyswagger.primitives.Datetime] = "2016-09-03T05:12:25Z"
     location_id: int = 456
@@ -131,6 +131,7 @@ class esi_eve_market_order:
     volume_total: int = 123456
     item_name: str = "namename"
     type_name: str = "typetype"
+    is_lowest_sell_order : bool = True
 
     def convert_issued_to_datetime(self) -> None:
         """
@@ -202,7 +203,7 @@ class char_api_swagger_collection:
         self.app = esipy.EsiApp().get_latest_swagger  # todo
         self.security = self.create_esi_security()
         self.client = self.create_client()
-        self.api_info = self.security.verify()
+        self.api_info = self.security.verify(options={'verify_aud':False})
         self.char_id = self.get_char_id()
 
     def create_esi_security(self) -> esipy.EsiSecurity:
@@ -245,12 +246,19 @@ class char_api_swagger_collection:
             import dotenv
             if self.mw_refresh_key == "":
                 webbrowser.open(self.security.get_auth_uri(state='logging_in_state', scopes=self.scope), new=1)
-                access_token = input("Access token please (copypaste from the code section")
+                access_token = input("Access token please (copypaste from the code section) --> ")
                 refresh_key = self.security.auth(str(access_token))['refresh_token']
 
                 dotenv.set_key(self.dot_env_f, "env_refresh_key", refresh_key)
             else:
-                self.refresh_token_key()
+                try:
+                    self.refresh_token_key()
+                except Exception:
+                    webbrowser.open(self.security.get_auth_uri(state='logging_in_state', scopes=self.scope), new=1)
+                    access_token = input("Access token please (copypaste from the code section")
+                    refresh_key = self.security.auth(str(access_token))['refresh_token']
+                    dotenv.set_key(self.dot_env_f, "env_refresh_key", refresh_key)
+
         except UnboundLocalError:
             pass
         return client
@@ -308,6 +316,7 @@ class character:
     #
     market_orders: List[esi_eve_market_order] = []
 
+
     def get_market_orders(self, api_obj) -> Optional[dict]:
         self.market_orders = [order for order in esi_market.get_market_orders(self.id, self.name, api_obj)]
         return 0
@@ -346,7 +355,7 @@ class character:
             else:# market_order_dict.get(f'{order.type_id}', {}).get(f'{order.region_id}', None):
                 market_order_dict[f'{order.type_id}'][f'{order.region_id}'] += order.volume_remain
 
-            print(f"{order.order_id} -> {api_obj.get_id_via_api_comm(order.type_id)} --> ++{order.volume_remain} --> {market_order_dict[f'{order.type_id}'][f'{order.region_id}']}")
+            #print(f"{order.order_id} -> {api_obj.get_id_via_api_comm(order.type_id)} --> ++{order.volume_remain} --> {market_order_dict[f'{order.type_id}'][f'{order.region_id}']}")
 
 
 

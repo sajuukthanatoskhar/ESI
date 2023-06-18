@@ -1,2 +1,1 @@
-structures_to_watch = ['NX5W-U - Init pets Goons',
-                       'T0DT-T - Couch of Legends']
+structures_to_watch = [ 'MJ-5F9 - B E A N S T A R']

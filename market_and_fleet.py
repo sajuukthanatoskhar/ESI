@@ -1,24 +1,23 @@
 import codecs
 import datetime
-import io
 import json
 import sqlite3
 import time
 import urllib.request
 import _thread
 import os
-# from ruamel.yaml import YAML
 import threading
 from queue import Queue
 import math
 import requests
 import yaml
-from typing import List, Union
-import MoonGooGUI
-import tkinter
+
 import authpython
+import esi_classes
 import pythonserver
 from collections import OrderedDict
+
+from market_watcher_keys import scope
 
 global totalcost
 totalcost = 0
@@ -57,7 +56,7 @@ def req_fuzzwork(request):
     return wp
 
 
-def threaded_reaction_cost(thread_lock_no, materialname, runs_required, market_hub, alliance_home_region):
+def threaded_reaction_cost(thread_lock_no, materialname, runs_required, market_hub, alliance_home_region, api_obj):
     """
     Calculates reaction cost using a thread
     :param thread_lock_no:
@@ -69,7 +68,7 @@ def threaded_reaction_cost(thread_lock_no, materialname, runs_required, market_h
     """
     # TODO:reactioncost
     print("calculating cost of reaction using" + str(thread_lock_no))
-    reaction_cost(materialname, runs_required, market_hub, alliance_home_region)
+    reaction_cost(materialname, runs_required, market_hub, alliance_home_region, api_obj= api_obj)
     thread_lock_no.release()
     '''
     One time run function
@@ -94,33 +93,21 @@ This gets the item_id from the *.etf listed
 returns type_id as an integer value
 """
 
-
-def get_typeid(name):
-    with open("eve_inv_types.etf", mode="r", encoding="utf-8") as sourcefile:
-        for line in sourcefile:
-            parts_k = line.split()
-            type_id = parts_k[0]
-            itemname_k = ' '.join(parts_k[1:])
-            if str(name) == str(itemname_k):
-                return type_id
+from esi_search_functions import get_item_typeid
+def get_typeid(name,api_obj):
+    return get_item_typeid(name,api_obj)
 
 
-'''
-Gives the region_id
-Input is region name
-returns region_id as integer
-'''
 
 
-def get_region(name):
-    with open("regions_constellations_systems.etf", mode="r", encoding="utf-8") as sourcefile:
-        for line in sourcefile:
-            parts_k = line.split()
-            region_id = parts_k[0]
-            itemname_k = ' '.join(parts_k[1:])
-            if str(name) == str(itemname_k):
-                return region_id
-
+from esi_search_functions import get_regionid
+def get_region(name,api_obj):
+    '''
+    Gives the region_id
+    Input is region name
+    returns region_id as integer
+    '''
+    return get_regionid(name, api_obj=api_obj)
 
 '''
 Is reciprocal function of get_typeid
@@ -136,9 +123,6 @@ def get_name(item_id_input):
             parts_k = line.split()
             item_name = ' '.join(parts_k[1:])
             item_id = parts_k[0]
-            # print(str(int(name)))
-            # print(str(int(itemname_k)))
-            # print("%s %s %s"%(name,itemname_k,typeid_k))
             if int(item_id_input) == int(item_id):
                 return item_name
 
@@ -168,23 +152,27 @@ itemtype is the name of an item
 """
 
 
-def get_market_price(region, itemtype):
-    type_id_request = get_typeid(itemtype)
-    region_id = get_region(region)
+def get_market_price(region, itemtype, api_obj, order_type = 'sell'):
+    type_id_request = get_typeid(itemtype, api_obj=api_obj)
+    region_id = get_region(region, api_obj)
     reader = codecs.getreader("utf-8")
-    pw = json.load(reader(
-        req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
+    pw = api_obj.execute_api_command('get',"markets_region_id_orders",order_type= order_type,region_id=region_id,type_id=type_id_request)
+
+    # pw = json.load(reader(req_esi("markets/%s/orders/?order_type=sell&type_id=%s&datasource=tranquility" % (region_id, type_id_request))))
     ordered_list = print_ordered_JSON(pw, type_id_request, region_id, region, itemtype)
     ordered_list_index_total = len(ordered_list)
     spread = int(round(ordered_list_index_total / 10, 0) * 2)
-    if spread is 0:
+    if spread == 0:
         spread = 1
     ordercount = 0
     totalcost = 0
-    for i in range(0, spread):
-        totalcost = totalcost + ordered_list[i].cost * ordered_list[i].volumeremain
-        ordercount = ordercount + ordered_list[i].volumeremain
-    price = totalcost / ordercount
+    for an_order in ordered_list:
+        totalcost += an_order.cost * an_order.volumeremain
+        ordercount += an_order.volumeremain
+    try:
+        price = totalcost / ordercount
+    except ZeroDivisionError:
+        return 0
     return round(price, 2)
 
 
@@ -226,8 +214,6 @@ def print_ordered_JSON(json_market_order_part, type_id_request, region_id, regio
     """
     i = 0
     marketorders = []
-    # print("Price Lookup for %s (%s) in %s (%s)"%(itemtype,type_id_request,region,region_id))
-    # print("Item Type \t\t\tPrice \t\t\tRemaining Items")
     while i < len(json_market_order_part):
         type_id = json_market_order_part[i]["type_id"]
         volume_total = json_market_order_part[i]["volume_total"]
@@ -251,7 +237,7 @@ class market_item:
         self.cost = cost
 
 
-def get_blueprint_details(name):
+def get_blueprint_details(name, api_obj):
     """
     Get the blueprint details from fuzzworks
     Example - https://www.fuzzwork.co.uk/blueprint/api/blueprint.php?typeid=22457
@@ -261,7 +247,7 @@ def get_blueprint_details(name):
     :return:
     """
     reader = codecs.getreader("utf-8")
-    type_id_request = get_typeid(name)
+    type_id_request = get_typeid(name, api_obj=api_obj)
     js_wp = json.load(reader(req_fuzzwork(type_id_request)))
     return js_wp
 
@@ -280,7 +266,7 @@ def get_reactionoutput(target_reaction):
         return config[int(target_reaction)]["activities"]["reaction"]["products"][0]["quantity"]
 
 
-def reaction_cost(complex_reaction, runs, marketregion, homeregion):
+def reaction_cost(complex_reaction, runs, marketregion, homeregion, api_obj):
     """
     Calculates complex reaction expenditure and revenue based on the get_market_price(x,y) function algorithm
     Input is the name of the complex reaction as a string, the number of runs of raw moon minerals, the marketregion where you are retrieving your prices from, homeregion has no functionality
@@ -289,33 +275,33 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
     """
     global moon_ingredients
     if complex_reaction != "Fullerides":
-        complexr = get_blueprint_details(complex_reaction + " Reaction Formula")
+        complexr = get_blueprint_details(complex_reaction + " Reaction Formula", api_obj)
     else:
-        complexr = get_blueprint_details(complex_reaction[:-1] + " Reaction Formula")
+        complexr = get_blueprint_details(complex_reaction[:-1] + " Reaction Formula", api_obj)
     if complex_reaction != "Fullerides":
         print(str(complex_reaction) + " Output Revenue (" + str(runs) + " runs of raw minerals): " + str(
-            int(get_market_price(marketregion, complex_reaction)) * runs * 2 * int(get_reaction_output_quantity(
-                get_typeid(complex_reaction + " Reaction Formula"))) / 1E6) + " M Isk  (Total Units = " + str(
-            int(get_reaction_output_quantity(get_typeid(complex_reaction + " Reaction Formula"))) * runs * 2) + ")")
+            int(get_market_price(marketregion, complex_reaction, api_obj)) * runs * 2 * int(get_reaction_output_quantity(
+                get_typeid(complex_reaction + " Reaction Formula",api_obj))) / 1E6) + " M Isk  (Total Units = " + str(
+            int(get_reaction_output_quantity(get_typeid(complex_reaction + " Reaction Formula",api_obj))) * runs * 2) + ")")
     else:
         print(str(complex_reaction) + " Output Revenue (" + str(runs) + " runs of raw minerals): " + str(
-            int(get_market_price(marketregion, complex_reaction)) * runs * 2 * int(get_reaction_output_quantity(
-                get_typeid(complex_reaction[:-1] + " Reaction Formula"))) / 1E6) + " M Isk  (Total Units = " + str(int(
-            get_reaction_output_quantity(get_typeid(complex_reaction[:-1] + " Reaction Formula"))) * runs * 2) + ")")
+            int(get_market_price(marketregion, complex_reaction, api_obj)) * runs * 2 * int(get_reaction_output_quantity(
+                get_typeid(complex_reaction[:-1] + " Reaction Formula", api_obj))) / 1E6) + " M Isk  (Total Units = " + str(int(
+            get_reaction_output_quantity(get_typeid(complex_reaction[:-1] + " Reaction Formula", api_obj))) * runs * 2) + ")")
     simple_reaction = []
     total_raw_input = 0
 
     for line in complexr['activityMaterials']['11']:
-        tempprice = get_market_price(marketregion, line['name'])
+        tempprice = get_market_price(marketregion, line['name'], api_obj)
         if 'Block' in line['name']:
             total_raw_input = tempprice * 5 * runs * 2 + total_raw_input
         else:
-            simple_reaction.append(get_blueprint_details(line['name'] + " Reaction Formula"))
+            simple_reaction.append(get_blueprint_details(line['name'] + " Reaction Formula", api_obj))
     i = 0
 
     for superline in simple_reaction:
         for line in superline['activityMaterials']['11']:
-            tempprice = get_market_price(marketregion, line['name'])
+            tempprice = get_market_price(marketregion, line['name'], api_obj)
             if 'Block' in line['name']:
                 # print(line['name'] + " " + str(runs * 5))  # + str(tempprice*5*runs))
                 # print(line['name'] + " " + str(runs * 100))  # + str(tempprice*5*runs))
@@ -335,8 +321,7 @@ def reaction_cost(complex_reaction, runs, marketregion, homeregion):
 
     global totalcost
     totalcost += total_raw_input
-    # if screen_lock in globals():
-    #    screen_lock.release()
+
 
 
 def get_fleet_groups(fleet_doc):
@@ -349,8 +334,7 @@ def get_fleet_groups(fleet_doc):
     groups = list(set(fleet_doc.allowedshipsrole))
     group_ratio = []
 
-    ratio_index_list = [i for i in range(len(fleet_doc.allowedshipsrole)) if
-                        not i == fleet_doc.allowedshipsrole.index(fleet_doc.allowedshipsrole[i])]
+    ratio_index_list = [i for i in range(len(fleet_doc.allowedshipsrole)) if i != fleet_doc.allowedshipsrole.index(fleet_doc.allowedshipsrole[i])]
     # These find the indexes being used... I didn't write this code and is hard to read holy shit. TODO: Learn how to code in python
     ratioindex = [i for j, i in enumerate(fleet_doc.allowedshipsratio) if j not in ratio_index_list]
     groupindex = [i for j, i in enumerate(fleet_doc.allowedshipsrole) if j not in ratio_index_list]
@@ -377,10 +361,10 @@ def process_fleet_comp(fleetjson, length, fleet_doctrine):
     i = 0
     fleet_groups, group_ratio = get_fleet_groups(fleet_doctrine)
     fleet_group_count = list(range(0, len(group_ratio)))
-    i = 0
+
     while i < len(fleet_group_count):  # Resets fleet group count, probably can delete  #TODO: Please check!
         fleet_group_count[i] = 0
-        i = i + 1
+        i += 1
     i = j = z = 0
     while z < length:  # Loop through every member in the fleet to....
         checkshipname = get_name(fleetjson[z]["ship_type_id"])
@@ -430,7 +414,7 @@ class doctrine:
             self.allowedshipsweight.append(pw[3])
 
 
-def read_tokens(file: Union[str, os.PathLike[str]]):
+def read_tokens(file):
     """
     Reading the tokens made from the pythonserver.py functions from a file (mostly it should be 'key.key')
     Input is the file
@@ -476,7 +460,7 @@ Also, the tokens need to come from the Fleet Boss.!!
 
 def fleet_overwatch(fleet_type: str, state_of_fleet: int, fleet_commander_name: str):
     access = input('Do you need to run the server?')
-    if access is 'a':
+    if access == 'a':
         pythonserver.run()
     ratio_scores = []
     # First we load the two keys from the keys.key file
@@ -643,7 +627,7 @@ def check_file(file):
 
 
 
-def get_number_of_runs_for_build(market_hub, alliance_home_region, file):
+def get_number_of_runs_for_build(market_hub, alliance_home_region, file, api_obj):
     """
     In this function I want to read materials
     First, we take stuff from fuzzworks and dump it into a file, this is done outside the program for now
@@ -668,19 +652,19 @@ def get_number_of_runs_for_build(market_hub, alliance_home_region, file):
                 materialname = str(' '.join(parts_k[1:]))
                 materialquantity = parts_k[0]
                 runs_required = math.ceil(float(materialquantity) / (2 * float(
-                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
+                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname),api_obj)))))
                 a_lock = _thread.allocate_lock()
                 a_lock.acquire()
                 locks.append(a_lock)
                 _thread.start_new_thread(threaded_reaction_cost,
-                                         (a_lock, materialname, runs_required, market_hub, alliance_home_region))
+                                         (a_lock, materialname, runs_required, market_hub, alliance_home_region, api_obj))
         with open(file, mode="r") as file_to_read:  # Summarises the complex reactions
             for line in file_to_read:
                 parts_k = line.split()
                 materialname = str(' '.join(parts_k[1:]))
                 materialquantity = parts_k[0]
                 runs_required = math.ceil(float(materialquantity) / (2 * float(
-                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname))))))
+                    get_reaction_output_quantity(get_typeid(get_complex_material_reaction_name(materialname),api_obj)))))
                 print(materialname + " " + str(runs_required))
     else:
         print("Error: " + file + " does not exist")
@@ -709,7 +693,12 @@ def main():
     There is a lot of random stuff commented out here as I tend to uncomment them for various uses
     """
     # load_evedb("eve.db")
-    get_number_of_runs_for_build("The Forge", "Esoteria", "outputdump.txt")
+    app_col = esi_classes.char_api_swagger_collection("market_watcher_keys.env", scope)
+    achar = esi_classes.character()
+    achar.name = "Sajuukthanatoskhar"
+
+
+    get_number_of_runs_for_build("The Forge", "Perrigen Falls", "outputdump.txt", app_col)
     # MoonGooGUI.MoonGooGui()
     # multi_stuff()
     # unload_blueprintsyaml()

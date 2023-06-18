@@ -1,11 +1,15 @@
-400 Fermionic Condensates
-4330000 Fernite Carbide
-14000 Ferrogel
-12750 Hypersynaptic Fibers
-100500 Nanotransistors
-5100 Nonlinear Metamaterials
-327800 Phenolic Composites
-5400 Photonic Metamaterials
-108300 Plasmonic Metamaterials
-1554000 Sylramic Fibers
-43500 Terahertz Metamaterials
+19790000 Crystalline Carbonide
+28000 Fermionic Condensates
+28680000 Fernite Carbide
+287200 Ferrogel
+2664000 Fullerides
+492750 Hypersynaptic Fibers
+1437000 Nanotransistors
+299400 Nonlinear Metamaterials
+2116400 Phenolic Composites
+271500 Photonic Metamaterials
+337500 Plasmonic Metamaterials
+14622000 Sylramic Fibers
+103800 Terahertz Metamaterials
+18850000 Titanium Carbide
+7650000 Tungsten Carbide

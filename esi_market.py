@@ -34,6 +34,8 @@ def get_market_orders(api_obj) -> Union[None, dict]:
 
 
     """
+
+
     return api_obj.execute_api_command('get', "characters_corporation_id_orders", character_id=api_obj.char_id)
 
 
