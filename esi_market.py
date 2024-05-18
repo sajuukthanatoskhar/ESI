@@ -5,12 +5,13 @@ import requests
 import esi_search_functions
 import esi_config
 import esi_classes
+import fuzzworks_bpos.fuzzworks
 
 
 def get_market_history_item_region(item: str = None,
                                    region_id: str = None,
                                    typeid: str = None,
-                                   region_name: str = None):
+                                   region_name: str = None, app_col = None):
     """
     Gets the market history for an item in a region
     :param region_name:
@@ -20,9 +21,9 @@ def get_market_history_item_region(item: str = None,
     :return:
     """
     if not typeid:
-        typeid = esi_search_functions.get_item_typeid(item)
+        typeid = esi_search_functions.get_item_typeid(item, app_col)
     if not region_id:
-        region_id = esi_search_functions.get_regionid(region_name)
+        region_id = esi_search_functions.get_regionid(region_name, app_col)
 
     market_endpoint = f"markets/{region_id}/history/?datasource=tranquility&type_id={typeid}"
     market_dict_list = requests.get(esi_config.esi_startpoint + market_endpoint).json()
@@ -37,6 +38,15 @@ def get_market_orders(api_obj) -> Union[None, dict]:
 
 
     return api_obj.execute_api_command('get', "characters_corporation_id_orders", character_id=api_obj.char_id)
+
+
+def get_open_market_order_regionid_typeid_ordertype(api_obj, region_name : str, item_name : str, order_type = 'sell',  ):
+    """
+    Gets the order for an item in a region using the public market index
+    """
+    type_id = fuzzworks_bpos.fuzzworks.get_single_id(item_name)
+    region_id = esi_search_functions.get_regionid(region_name, api_obj)
+    return api_obj.execute_api_command('get', "markets_region_id_orders", region_id=region_id, type_id = type_id, order_type = order_type)
 
 
 def get_market_groups(api_obj) -> list[int]:

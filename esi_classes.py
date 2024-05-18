@@ -1,3 +1,5 @@
+import collections.abc
+import esipy
 import dataclasses
 import datetime
 import io
@@ -6,11 +8,9 @@ import queue
 import webbrowser
 from typing import List, Union, Optional
 import esi_search_functions
-import esipy
 import pyswagger.primitives
-
 import esi_market
-
+import pyswagger.errs
 
 @dataclasses.dataclass
 class market_history_entry:
@@ -71,7 +71,7 @@ class market_item_history:
         """
         self.to_be_produced = self.required_qty - self.current_qty_in_region
 
-    def get_market_history(self):
+    def get_market_history(self, app = None):
         """
         Gets the Market history of an item
         :return:
@@ -79,7 +79,7 @@ class market_item_history:
         self.market_history, self.item_typeid, self.regionid = esi_market.get_market_history_item_region(item=self.item,
                                                                                                          region_id=self.regionid,
                                                                                                          typeid=self.item_typeid,
-                                                                                                         region_name=self.region_name)
+                                                                                                         region_name=self.region_name, app_col= app)
 
     def update_all_dates(self) -> None:
         for entry in self.market_history:
@@ -146,7 +146,7 @@ class esi_eve_market_order:
     def update_values(self, **kwargs):
         """
         Updates all values from kwargs
-        :param kwargs:
+        :param kwargs:  dict is preferably (**a_dict as param)
         :return:
         """
         for k, v in kwargs.items():
@@ -155,6 +155,18 @@ class esi_eve_market_order:
             except ValueError:
                 print(f"{k} not present!")
 
+    @staticmethod
+    def create_order_from_dict(a_dict: dict) -> object:
+        """
+        Static method that creates an order from a dict.  Very nice
+        @param a_dict: The dict that will be used to create teh esi_eve_esi_eve_market_order object
+        @return: esi_eve_market_order object
+        """
+        if isinstance(a_dict, dict):
+            an_order = esi_eve_market_order()
+            an_order.update_values(**a_dict)
+            return an_order
+        raise TypeError(f"a_dict input is not correct!!!!!")
 
 class corporation:
     id: int
@@ -276,10 +288,15 @@ class char_api_swagger_collection:
             data = self.client.request(op)
         except ValueError as e:
             print(f"Exception - {kwargs} does not have the required input parameter -> {e.args}")
-        except Exception as d:
-            print(f"Unknown Error occurred -> {d}")
+        except pyswagger.errs.ValidationError as vald:
+            print(f"Unknown Error occurred -> {vald}")
+        except esipy.exceptions.APIException as APIe:
+            import json
+            data = json.loads(APIe.response.decode())
+            return data
         if queue_obj:
             queue_obj.put(data.data)
+
 
         x_page = check_data_header(data)
         if not x_page:

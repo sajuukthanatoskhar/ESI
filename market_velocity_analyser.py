@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     for item in items_analysed:
         try:
-            item.get_market_history()
+            item.get_market_history(app= None)
         except KeyError as e:
             print(e)
 
