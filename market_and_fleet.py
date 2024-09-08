@@ -693,9 +693,9 @@ def main():
     There is a lot of random stuff commented out here as I tend to uncomment them for various uses
     """
     # load_evedb("eve.db")
-    app_col = esi_classes.char_api_swagger_collection("market_watcher_keys.env", scope)
-    achar = esi_classes.character()
-    achar.name = "Sajuukthanatoskhar"
+    #app_col = esi_classes.char_api_swagger_collection("market_watcher_keys.env", scope)
+    #achar = esi_classes.character()
+    #achar.name = "Sajuukthanatoskhar"
 
 
     get_number_of_runs_for_build("The Forge", "Perrigen Falls", "outputdump.txt", app_col)

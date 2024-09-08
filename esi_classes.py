@@ -5,9 +5,17 @@ import datetime
 import io
 import os
 import queue
+import sys
 import webbrowser
 from typing import List, Union, Optional
 import esi_search_functions
+import collections
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+    from collections.abc import MutableMapping
+else:
+    from collections import MutableMapping
+import esipy
 import pyswagger.primitives
 import esi_market
 import pyswagger.errs
