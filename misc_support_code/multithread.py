@@ -29,9 +29,5 @@ def test1():
     print('Entire job took:' + str(time.time() - start))
 
 
-def main():
-
-
-
-
-main()
+if __name__ == '__main__':
+    pass

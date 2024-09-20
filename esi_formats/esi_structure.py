@@ -1,10 +1,7 @@
 import dataclasses
 import queue
-import threading
-import sys
 from typing import List
-import asyncio
-import esi_classes
+from esi_formats import esi_classes
 
 from concurrent.futures import ThreadPoolExecutor
 

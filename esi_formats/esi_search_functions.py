@@ -1,9 +1,5 @@
 from typing import Union
 
-import requests
-
-import esi_config
-
 
 def get_search(entity_type: str, search_string: str, strict="True", api_obj = None) -> Union[list, str, int]:
     """
@@ -44,4 +40,4 @@ def get_category_information(api_obj, category_id):
     pass
 
 if __name__ == '__main__':
-    print(get_item_typeid("sabre"))
+    print(get_item_typeid("Sabre"))

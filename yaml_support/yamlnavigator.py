@@ -8,7 +8,7 @@ import locale
 import yaml
 
 def nav():
-    with open("regions_constellations_systems.yaml", 'r') as stream:
+    with open("../resources/regions_constellations_systems.yaml", 'r') as stream:
         try:
             config = yaml.safe_load(stream)
             #print(len(config))
@@ -23,7 +23,7 @@ def nav():
 
 def main():
 
-    with open("regions_constellations_systems.yaml", 'r') as stream:
+    with open("../resources/regions_constellations_systems.yaml", 'r') as stream:
         file_write = codecs.open("regions_constellations_systems.etf", "w", "utf-8")
         config = yaml.safe_load(stream)
         max_lines = len(config)

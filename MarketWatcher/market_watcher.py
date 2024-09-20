@@ -1,17 +1,11 @@
-import dataclasses
 import time
 
-import esipy
-import webbrowser
-
-import esi_market
 from market_watcher_keys import *
-import structure_watchlist
+from configurations import structure_watchlist
+
 refresh_key = mw_refresh_key
-import esi_classes
-import esi_structure
-import market_lists
-import esi_search_functions
+from esi_formats import esi_search_functions, esi_classes, esi_structure
+
 
 def market_watcher_func(market_watcher: list):
     item : esi_classes.market_item_history

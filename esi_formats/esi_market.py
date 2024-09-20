@@ -1,9 +1,9 @@
-from typing import List, Union
+from typing import Union
 
 import requests
 
 import esi_search_functions
-import esi_config
+from configurations import esi_config
 import esi_classes
 import fuzzworks_bpos.fuzzworks
 

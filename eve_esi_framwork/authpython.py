@@ -3,6 +3,7 @@ from base64 import b64encode
 
 import requests as re
 
+
 clientid = '4d76436f1f6748b89e03ebe8d633dc3d'
 secretkey = '6gcwvLk94I0id6ke4ATxZqXcTPKnnpxyof16hXBu'
 token_url = 'https://login.eveonline.com/oauth/token'

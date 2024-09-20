@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-import codecs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib import parse
 #import authpython
-import codecs
-import json
-import authpython
+from eve_esi_framwork import authpython
 
 ip = '127.0.0.1'
 port = 8000
@@ -49,7 +46,7 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
                 #print(pw['token_id'])
 
 
-                file_1_write = open("keys.key","w")
+                file_1_write = open("../configurations/keys.key", "w")
                 file_1_write.write("%s %s" % (pw['access_token'],pw['refresh_token']))
                 #file_1_write.write("%s %s" % (pw['token_id'],pw['refresh_id']))
                 file_1_write.close()

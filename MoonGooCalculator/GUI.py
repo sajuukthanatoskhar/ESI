@@ -1,6 +1,6 @@
 from tkinter import *
 import math
-import market_and_fleet
+from MarketWatcher import market_and_fleet
 
 
 class MyFirstGUI:

@@ -1,7 +1,5 @@
 import pytest
-import hypothesis as ht
-from hypothesis import strategies as st
-import ADM_Levels
+from ADM import ADM_Levels
 
 
 class Test_TestMilIndexRequirements:

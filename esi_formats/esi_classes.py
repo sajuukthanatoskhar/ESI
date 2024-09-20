@@ -1,24 +1,20 @@
-import collections.abc
-import esipy
 import dataclasses
 import datetime
 import io
 import os
 import queue
-import sys
 import webbrowser
 from typing import List, Union, Optional
-import esi_search_functions
-import collections
+#
+# if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+#     from collections.abc import MutableMapping
+# else:
+#     from collections import MutableMapping
 
-if sys.version_info.major == 3 and sys.version_info.minor >= 10:
-    from collections.abc import MutableMapping
-else:
-    from collections import MutableMapping
 import esipy
-import pyswagger.primitives
+# import pyswagger.primitives
 import esi_market
-import pyswagger.errs
+# import pyswagger.errs
 
 @dataclasses.dataclass
 class market_history_entry:
@@ -127,7 +123,7 @@ class esi_eve_market_order:
     escrow: float = 45.6
     is_buy_order: bool = False
     is_corporation: bool = False
-    issued: Union[str, datetime.datetime, pyswagger.primitives.Datetime] = "2016-09-03T05:12:25Z"
+    issued: Union[str, datetime.datetime] = "2016-09-03T05:12:25Z"
     location_id: int = 456
     min_volume: int = 1
     order_id: int = 123
@@ -148,8 +144,8 @@ class esi_eve_market_order:
         """
         if self.issued is str:
             self.issued = datetime.datetime.strptime(self.issued, "%Y-%m-%dT%H:%M:%S%z")
-        elif self.issued is pyswagger.primitives.Datetime:
-            self.issued = datetime.datetime.fromisoformat(self.issued)
+        # elif self.issued is pyswagger.primitives.Datetime:
+        #     self.issued = datetime.datetime.fromisoformat(self.issued)
 
     def update_values(self, **kwargs):
         """
@@ -296,8 +292,8 @@ class char_api_swagger_collection:
             data = self.client.request(op)
         except ValueError as e:
             print(f"Exception - {kwargs} does not have the required input parameter -> {e.args}")
-        except pyswagger.errs.ValidationError as vald:
-            print(f"Unknown Error occurred -> {vald}")
+        # except pyswagger.errs.ValidationError as vald:
+        #     print(f"Unknown Error occurred -> {vald}")
         except esipy.exceptions.APIException as APIe:
             import json
             data = json.loads(APIe.response.decode())
@@ -407,10 +403,3 @@ class Esi_Security_Details:
         self.client_id = os.environ.get("env_client_id")
         self.call_back = os.environ.get("env_call_back")
         self.mw_refresh_key = os.environ.get("env_refresh_key")
-
-
-
-if __name__ == '__main__':
-    import pyautogui
-
-    pyautogui.press('F13')

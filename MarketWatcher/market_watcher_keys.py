@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv("market_watcher_keys.env")
+load_dotenv("../configurations/market_watcher_keys.env")
 
 client_id = os.environ.get("env_client_id")
 secret_key = os.environ.get("env_secret_key")

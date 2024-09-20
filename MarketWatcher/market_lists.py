@@ -1,7 +1,7 @@
 from typing import List
 
 
-from esi_classes import market_item_history
+from esi_formats.esi_classes import market_item_history
 
 stage_1_escalation : List[market_item_history] = [
     market_item_history(item="Miner II", region_name="Outer Passage", required_qty= 40, market_history= []),

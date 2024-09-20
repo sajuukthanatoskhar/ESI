@@ -1,0 +1,7 @@
+pytest~=8.3.3
+Flask~=3.0.3
+requests~=2.32.3
+EsiPy~=1.2.3
+Django~=5.1.1
+PyYAML~=6.0.2
+python-dotenv~=1.0.1

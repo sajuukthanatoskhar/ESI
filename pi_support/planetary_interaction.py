@@ -1,16 +1,12 @@
 
 import csv
-import pathlib
 from typing import List
-import esi_search_functions
-import fuzzworks_bpos.fuzzworks
-import esi_classes
-import esi_market
+from esi_formats import esi_classes
 
 import requests
 import pathlib
 
-pi_types_csv_path = "./planetaryinteraction/planetSchematicsTypeMap.csv"
+pi_types_csv_path = "../planetaryinteraction/planetSchematicsTypeMap.csv"
 
 def get_pi_csv_fuzzworks():
     """
